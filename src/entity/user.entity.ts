@@ -1,25 +1,28 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn('increment')
-  id: number;
+  @PrimaryGeneratedColumn('identity')
+  user_id: number;
 
   @Column({ type: 'varchar', length: 30 })
-  name: string;
-
-  @Column({ type: 'varchar', length: 15 })
-  username: string;
-
-  @Column({ type: 'varchar', length: 40 })
-  email: string;
-
-  @Column({ type: 'int' })
-  age: number;
+  usrn: string;
 
   @Column({ type: 'varchar' })
-  password: string;
+  pass: string;
 
-  @Column({ type: 'enum', enum: ['m', 'f', 'u'] })
-  gender: string;
+  @Column({ type: 'varchar', length: 50 })
+  role: string;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  crd_at: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  upd_at: Date;
 }
