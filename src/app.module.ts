@@ -5,8 +5,6 @@ import { AuthModule } from './auth/auth.module';
 import { User } from './entity/user.entity';
 import { UsersModule } from './users/users.module';
 import { NotifyModule } from './notify/notify.module';
-import { NotifyModule } from './notify/notify.module';
-import { NotifyModule } from './notify/notify.module';
 
 @Module({
   imports: [
