@@ -1,28 +1,66 @@
+import { join } from 'path';
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
+  JoinColumn,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Workspaces } from './workspace.entity';
+import { BlogComments, BlogRatings, Blogs } from './blog.entity';
+import { Notifications } from './notification.entity';
 
 @Entity()
-export class User {
-  @PrimaryGeneratedColumn('identity')
+export class Users {
+  @PrimaryColumn('integer')
   user_id: number;
-
-  @Column({ type: 'varchar', length: 30 })
+  @Column('varying character', { length: 50, nullable: false })
   usrn: string;
-
-  @Column({ type: 'varchar' })
+  @Column('varying character', { length: 125, nullable: false })
   pass: string;
-
-  @Column({ type: 'varchar', length: 50 })
+  @Column({
+    type: 'enum',
+    enum: ['MA', 'HM', 'PM', 'EM'],
+    default: 'EM',
+    nullable: false,
+  })
   role: string;
-
-  @CreateDateColumn({ type: 'timestamp' })
+  @DeleteDateColumn()
+  deleted_at: Date;
+  @CreateDateColumn()
   crd_at: Date;
-
-  @UpdateDateColumn({ type: 'timestamp' })
+  @UpdateDateColumn()
   upd_at: Date;
+
+  // Relations
+  // Workspaces
+  @ManyToMany(() => Workspaces)
+  @JoinTable()
+  workspaces: Workspaces[];
+  // Workspace-owner
+  @OneToMany(() => Workspaces, (workspaces) => workspaces.owner)
+  workspaceOwner: Workspaces;
+
+  // Blogs
+  @OneToMany(() => Blogs, (blogs) => blogs.user)
+  blogs: Blogs[];
+
+  // Notifications
+  @OneToMany(() => Notifications, (notifications) => notifications.user)
+  notifications: Notifications[];
+
+  // Blog Ratings
+  @OneToMany(() => BlogRatings, (blogRatings) => blogRatings.user)
+  blogRatings: BlogRatings[];
+
+  //Blog Comments
+  @OneToMany(() => BlogComments, (blogComments) => blogComments.user)
+  blogComments: BlogComments[];
 }
