@@ -8,14 +8,14 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Workspaces } from './workspace.entity';
-import { Blogs } from './blog.entity';
+import { Workspace } from './workspace.entity';
+import { Blog } from './blog.entity';
 
 @Entity()
-export class Sources {
+export class Source {
   @PrimaryColumn('uuid')
   src_id: string;
-  @Column({ type: 'number', nullable: false })
+  @Column({ type: 'varchar', length: 50, nullable: false })
   src_name: string;
   @Column({ type: 'text' })
   src_url: string;
@@ -26,11 +26,12 @@ export class Sources {
 
   // Relations
   // Workspace
-  @ManyToOne(() => Workspaces, (workspaces) => workspaces.sources)
-  workspace: Workspaces;
+  @ManyToOne(() => Workspace, (workspaces) => workspaces.sources)
+  @JoinColumn({ name: 'wksp_id' })
+  workspace: Workspace;
 
   // Blog
-  @OneToOne(() => Blogs)
-  @JoinColumn()
-  blog: Blogs;
+  @OneToOne(() => Blog)
+  @JoinColumn({ name: 'blog_id' })
+  blog: Blog;
 }

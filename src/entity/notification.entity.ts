@@ -2,18 +2,19 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Users } from './user.entity';
-import { Workspaces } from './workspace.entity';
+import { User } from './user.entity';
+import { Workspace } from './workspace.entity';
 
 @Entity()
-export class Notifications{
+export class Notification {
   @PrimaryColumn('uuid')
   noti_id: string;
-  @Column('varying character', { length: 150, nullable: false })
+  @Column('varchar', { length: 150, nullable: false })
   noti_tle: string;
   @Column('text')
   noti_cont: string;
@@ -24,10 +25,12 @@ export class Notifications{
 
   // relations
   // user
-  @ManyToOne(() => Users, (users) => users.notifications)
-  user: Users;
+  @ManyToOne(() => User, (users) => users.notifications)
+  @JoinColumn({ name: 'auth_id' })
+  user: User;
 
   // Workspace
-  @ManyToOne(() => Workspaces, (workspaces) => workspaces.notifications)
-  workspace: Workspaces;
+  @ManyToOne(() => Workspace, (workspaces) => workspaces.notifications)
+  @JoinColumn({ name: 'wksp_id' })
+  workspace: Workspace;
 }

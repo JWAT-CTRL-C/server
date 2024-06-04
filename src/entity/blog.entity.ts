@@ -2,24 +2,23 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
   ManyToOne,
   OneToMany,
-  OneToOne,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Users } from './user.entity';
-import { Workspaces } from './workspace.entity';
+import { User } from './user.entity';
+import { Workspace } from './workspace.entity';
 import { Tag } from './tag.entity';
-import { Sources } from './source.entity';
 
 @Entity()
-export class Blogs {
+export class Blog {
   @PrimaryColumn('uuid')
   blog_id: string;
-  @Column('varying character', { length: 150, nullable: false })
+  @Column('varchar', { length: 150, nullable: false })
   blog_tle: string;
   @Column('text', { nullable: false })
   blog_cont: string;
@@ -29,35 +28,41 @@ export class Blogs {
   upd_at: Date;
 
   // Relations
-  
+
   // User
-  @ManyToOne(() => Users, (users) => users.blogs)
-  user: Users;
+  @ManyToOne(() => User, (users) => users.blogs)
+  @JoinColumn({ name: 'auth_id' })
+  user: User;
 
   // Workspace
-  @ManyToOne(() => Workspaces, (workspaces) => workspaces.blogs)
-  workspace: Workspaces;
+  @ManyToOne(() => Workspace, (workspaces) => workspaces.blogs)
+  @JoinColumn({ name: 'wksp_id' })
+  workspace: Workspace;
 
   // Tags
   @ManyToMany(() => Tag)
-  @JoinTable()
+  @JoinTable({
+    name: 'blog_tag',
+    joinColumn: { name: 'blog_id' },
+    inverseJoinColumn: { name: 'tag_id' },
+  })
   tags: Tag[];
 
   // BlogImages
-  @OneToMany(() => BlogImages, (blogImages) => blogImages.blog)
-  blogImages: BlogImages[];
+  @OneToMany(() => BlogImage, (blogImages) => blogImages.blog)
+  blogImages: BlogImage[];
 
   // BlogComments
-  @OneToMany(() => BlogComments, (blogComments) => blogComments.blog)
-  blogComments: BlogComments[];
+  @OneToMany(() => BlogComment, (blogComments) => blogComments.blog)
+  blogComments: BlogComment[];
 
   // BlogRatings
-  @OneToMany(() => BlogRatings, (blogRatings) => blogRatings.blog)
-  blogRatings: BlogRatings[];
-
+  @OneToMany(() => BlogRating, (blogRatings) => blogRatings.blog)
+  blogRatings: BlogRating[];
 }
 
-export class BlogImages {
+@Entity()
+export class BlogImage {
   @PrimaryColumn('uuid')
   blog_img_id: string;
   @Column('text', { nullable: false })
@@ -69,11 +74,13 @@ export class BlogImages {
 
   // Relations
   // blog
-  @ManyToOne(() => Blogs, (blogs) => blogs.blogImages)
-  blog: Blogs;
+  @ManyToOne(() => Blog, (blogs) => blogs.blogImages)
+  @JoinColumn({ name: 'blog_id' })
+  blog: Blog;
 }
 
-export class BlogComments {
+@Entity()
+export class BlogComment {
   @PrimaryColumn('uuid')
   blog_cmt_id: string;
   @Column('text', { nullable: false })
@@ -85,14 +92,18 @@ export class BlogComments {
 
   // relations
   // user
-  @ManyToOne(() => Users, (users) => users.blogComments)
-  user: Users;
+  @ManyToOne(() => User, (users) => users.blogComments)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
   // blog
-  @ManyToOne(() => Blogs, (blogs) => blogs.blogComments)
-  blog: Blogs;
+  @ManyToOne(() => Blog, (blogs) => blogs.blogComments)
+  @JoinColumn({ name: 'blog_id' })
+  blog: Blog;
 }
-export class BlogRatings {
+
+@Entity()
+export class BlogRating {
   @PrimaryColumn('uuid')
   blog_rtg_id: string;
   @Column('boolean', { default: true })
@@ -104,10 +115,12 @@ export class BlogRatings {
 
   // relations
   // user
-  @ManyToOne(() => Users, (users) => users.blogRatings)
-  user: Users;
+  @ManyToOne(() => User, (users) => users.blogRatings)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
   // blog
-  @ManyToOne(() => Blogs, (blogs) => blogs.blogRatings)
-  blog: Blogs;
+  @ManyToOne(() => Blog, (blogs) => blogs.blogRatings)
+  @JoinColumn({ name: 'blog_id' })
+  blog: Blog;
 }

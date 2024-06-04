@@ -1,29 +1,25 @@
-import { join } from 'path';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  JoinColumn,
   JoinTable,
   ManyToMany,
-  ManyToOne,
   OneToMany,
-  OneToOne,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Workspaces } from './workspace.entity';
-import { BlogComments, BlogRatings, Blogs } from './blog.entity';
-import { Notifications } from './notification.entity';
+import { Workspace } from './workspace.entity';
+import { BlogComment, BlogRating, Blog } from './blog.entity';
+import { Notification } from './notification.entity';
 
 @Entity()
-export class Users {
+export class User {
   @PrimaryColumn('integer')
   user_id: number;
-  @Column('varying character', { length: 50, nullable: false })
+  @Column('varchar', { length: 50, nullable: false })
   usrn: string;
-  @Column('varying character', { length: 125, nullable: false })
+  @Column('varchar', { length: 125, nullable: false })
   pass: string;
   @Column({
     type: 'enum',
@@ -41,26 +37,30 @@ export class Users {
 
   // Relations
   // Workspaces
-  @ManyToMany(() => Workspaces)
-  @JoinTable()
-  workspaces: Workspaces[];
+  @ManyToMany(() => Workspace)
+  @JoinTable({
+    name: 'user_workspace',
+    joinColumn: { name: 'user_id' },
+    inverseJoinColumn: { name: 'wksp_id' },
+  })
+  workspaces: Workspace[];
   // Workspace-owner
-  @OneToMany(() => Workspaces, (workspaces) => workspaces.owner)
-  workspaceOwner: Workspaces;
+  @OneToMany(() => Workspace, (workspaces) => workspaces.owner)
+  workspaceOwner: Workspace;
 
   // Blogs
-  @OneToMany(() => Blogs, (blogs) => blogs.user)
-  blogs: Blogs[];
+  @OneToMany(() => Blog, (blogs) => blogs.user)
+  blogs: Blog[];
 
   // Notifications
-  @OneToMany(() => Notifications, (notifications) => notifications.user)
-  notifications: Notifications[];
+  @OneToMany(() => Notification, (notifications) => notifications.user)
+  notifications: Notification[];
 
   // Blog Ratings
-  @OneToMany(() => BlogRatings, (blogRatings) => blogRatings.user)
-  blogRatings: BlogRatings[];
+  @OneToMany(() => BlogRating, (blogRatings) => blogRatings.user)
+  blogRatings: BlogRating[];
 
   //Blog Comments
-  @OneToMany(() => BlogComments, (blogComments) => blogComments.user)
-  blogComments: BlogComments[];
+  @OneToMany(() => BlogComment, (blogComments) => blogComments.user)
+  blogComments: BlogComment[];
 }

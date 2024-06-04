@@ -1,17 +1,27 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from "typeorm";
-import { Users } from "./user.entity";
-import { Blogs } from "./blog.entity";
-import { Sources } from "./source.entity";
-import { Notifications } from "./notification.entity";
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { User } from './user.entity';
+import { Blog } from './blog.entity';
+import { Source } from './source.entity';
+import { Notification } from './notification.entity';
 
 @Entity()
-export class Workspaces {
+export class Workspace {
   @PrimaryColumn('uuid')
-  wkps_id: string;
-  @Column('varying character', { length: 50, nullable: false })
-  wkps_name: string;
-  @Column('varying character', { length: 125 })
-  wkps_desc: string;
+  wksp_id: string;
+  @Column('varchar', { length: 50, nullable: false })
+  wksp_name: string;
+  @Column('varchar', { length: 125 })
+  wksp_desc: string;
   @DeleteDateColumn()
   deleted_at: Date;
   @CreateDateColumn()
@@ -22,18 +32,19 @@ export class Workspaces {
   // relations
 
   // user-owner
-  @ManyToOne(() => Users, (users) => users.workspaceOwner)
-  owner: Users;
+  @ManyToOne(() => User, (users) => users.workspaceOwner)
+  @JoinColumn({ name: 'owner_id' })
+  owner: User;
 
   // Blog
-  @OneToMany(() => Blogs, (blogs) => blogs.workspace)
-  blogs: Blogs[];
+  @OneToMany(() => Blog, (blogs) => blogs.workspace)
+  blogs: Blog[];
 
   // Sources
-  @OneToMany(() => Sources, (sources) => sources.workspace)
-  sources: Sources[];
+  @OneToMany(() => Source, (sources) => sources.workspace)
+  sources: Source[];
 
   // Notifications
-  @OneToMany(() => Notifications, (notifications) => notifications.workspace)
-  notifications: Notifications[];
+  @OneToMany(() => Notification, (notifications) => notifications.workspace)
+  notifications: Notification[];
 }
