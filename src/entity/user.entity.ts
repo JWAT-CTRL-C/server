@@ -44,9 +44,10 @@ export class User {
     inverseJoinColumn: { name: 'wksp_id' },
   })
   workspaces: Workspace[];
-  // Workspace-owner
+
+  // Workspaces-owner
   @OneToMany(() => Workspace, (workspaces) => workspaces.owner)
-  workspaceOwner: Workspace;
+  workspacesOwner: Workspace[];
 
   // Blogs
   @OneToMany(() => Blog, (blogs) => blogs.user)
