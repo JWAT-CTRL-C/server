@@ -36,7 +36,11 @@ export class Workspace {
   @JoinColumn({ name: 'owner_id' })
   owner: User;
 
-  // Blog
+  // Users
+  @OneToMany(() => User, (users) => users.workspaces)
+  users: User[];
+
+  // Blogs
   @OneToMany(() => Blog, (blogs) => blogs.workspace)
   blogs: Blog[];
 
