@@ -18,6 +18,7 @@ import { JwtPayload } from 'src/lib/type';
 import { RegisterUser } from './dto/register-user.dto';
 import { LoginUser } from './dto/login-user.dto';
 import { LogoutUser } from './dto/logout-user.dto';
+import { HandleRefreshToken } from './dto/handle-refresh-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -125,7 +126,7 @@ export class AuthService {
     };
   }
 
-  async handleRefreshToken({ refresh_token, user_id }: LogoutUser) {
+  async handleRefreshToken({ refresh_token, user_id }: HandleRefreshToken) {
     try {
       const key = await this.keyRepository.findOne({
         where: { user: { user_id } },

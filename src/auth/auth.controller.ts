@@ -6,6 +6,7 @@ import { Public } from 'src/decorator/public.decorator';
 import { RegisterUser } from './dto/register-user.dto';
 import { LoginUser } from './dto/login-user.dto';
 import { LogoutUser } from './dto/logout-user.dto';
+import { HandleRefreshToken } from './dto/handle-refresh-token.dto';
 
 @Public()
 @ApiTags('Auth')
@@ -73,7 +74,7 @@ export class AuthController {
       required: ['refresh_token'],
     },
   })
-  async handleRefreshToken(@Body() data: LogoutUser) {
+  async handleRefreshToken(@Body() data: HandleRefreshToken) {
     return this.authService.handleRefreshToken(data);
   }
 
