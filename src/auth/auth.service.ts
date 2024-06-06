@@ -14,7 +14,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entity/user.entity';
 import { Key } from 'src/entity/key.entity';
 import { saltRounds } from 'src/lib/constant';
-import { JwtPayload, LoginUser, RegisterUser } from 'src/lib/type';
+import { JwtPayload } from 'src/lib/type';
+import { RegisterUser } from './dto/register-user.dto';
+import { LoginUser } from './dto/login-user.dto';
+import { LogoutUser } from './dto/logout-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -53,9 +56,6 @@ export class AuthService {
   }
 
   async register(registerUser: RegisterUser) {
-    if (!registerUser.usrn || !registerUser.pass)
-      throw new BadRequestException('Username and password are required');
-
     const foundUser = await this.userRepository.findOne({
       where: { usrn: registerUser.usrn },
     });
@@ -125,7 +125,7 @@ export class AuthService {
     };
   }
 
-  async refreshToken(user_id: number, refresh_token: string) {
+  async handleRefreshToken({ refresh_token, user_id }: LogoutUser) {
     try {
       const key = await this.keyRepository.findOne({
         where: { user: { user_id } },
@@ -177,7 +177,7 @@ export class AuthService {
     }
   }
 
-  async logout(user_id: number, refresh_token: string) {
+  async logout({ refresh_token, user_id }: LogoutUser) {
     try {
       const key = await this.keyRepository.findOne({
         where: { user: { user_id } },
