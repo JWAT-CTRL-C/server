@@ -2,8 +2,11 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 
-import { LoginUser, RegisterUser } from 'src/lib/type';
 import { Public } from 'src/decorator/public.decorator';
+import { RegisterUser } from './dto/register-user.dto';
+import { LoginUser } from './dto/login-user.dto';
+import { LogoutUser } from './dto/logout-user.dto';
+import { HandleRefreshToken } from './dto/handle-refresh-token.dto';
 
 @Public()
 @ApiTags('Auth')
@@ -63,12 +66,16 @@ export class AuthController {
           example: 'refresh_token',
           type: 'string',
         },
+        user_id: {
+          example: 1,
+          type: 'number',
+        },
       },
       required: ['refresh_token'],
     },
   })
-  async refreshToken(@Body() body: { user_id: number; refresh_token: string }) {
-    return this.authService.refreshToken(body.user_id, body.refresh_token);
+  async handleRefreshToken(@Body() data: HandleRefreshToken) {
+    return this.authService.handleRefreshToken(data);
   }
 
   @Post('logout')
@@ -80,11 +87,15 @@ export class AuthController {
           example: 'refresh_token',
           type: 'string',
         },
+        user_id: {
+          example: 1,
+          type: 'number',
+        },
       },
       required: ['refresh_token'],
     },
   })
-  async logout(@Body() body: { user_id: number; refresh_token: string }) {
-    return this.authService.logout(body.user_id, body.refresh_token);
+  async logout(@Body() logoutUser: LogoutUser) {
+    return this.authService.logout(logoutUser);
   }
 }

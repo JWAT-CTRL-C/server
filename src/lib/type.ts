@@ -8,6 +8,3 @@ export type JwtPayload = DecodeUser & {
   iat: number;
   exp: number;
 };
-
-export type RegisterUser = Pick<User, 'usrn' | 'role' | 'pass'>;
-export type LoginUser = Pick<User, 'usrn' | 'pass'>;
