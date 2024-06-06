@@ -37,16 +37,17 @@ export class User {
 
   // Relations
   // Workspaces
-  @ManyToMany(() => Workspace)
+  @ManyToMany(() => Workspace, (workspaces) => workspaces.users)
   @JoinTable({
     name: 'user_workspace',
     joinColumn: { name: 'user_id' },
     inverseJoinColumn: { name: 'wksp_id' },
   })
   workspaces: Workspace[];
-  // Workspace-owner
+
+  // Workspaces-owner
   @OneToMany(() => Workspace, (workspaces) => workspaces.owner)
-  workspaceOwner: Workspace;
+  workspacesOwner: Workspace[];
 
   // Blogs
   @OneToMany(() => Blog, (blogs) => blogs.user)

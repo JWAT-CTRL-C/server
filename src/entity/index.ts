@@ -4,6 +4,7 @@ import { BlogComment, BlogImage, BlogRating, Blog } from './blog.entity';
 import { Workspace } from './workspace.entity';
 import { Source } from './source.entity';
 import { Notification } from './notification.entity';
+import { Key } from './key.entity';
 
 export const entities = [
   User,
@@ -15,4 +16,5 @@ export const entities = [
   Source,
   Workspace,
   Notification,
+  Key,
 ];

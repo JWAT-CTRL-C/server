@@ -1,28 +1,206 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { Repository } from 'typeorm';
+import { generateKeyPairSync, randomInt } from 'crypto';
+import { InjectRepository } from '@nestjs/typeorm';
+
 import { User } from 'src/entity/user.entity';
-import { UsersService } from 'src/users/users.service';
+import { Key } from 'src/entity/key.entity';
+import { saltRounds } from 'src/lib/constant';
+import { JwtPayload, LoginUser, RegisterUser } from 'src/lib/type';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
-    private usersService: UsersService,
+    @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(Key) private keyRepository: Repository<Key>,
   ) {}
 
-  async validateUser(username: string, password: string): Promise<any> {
-    const user = await this.usersService.findOne(+username);
-    if (user && user.password === password) {
-      const { password, ...result } = user;
-      return result;
-    }
-    return null;
+  async createTokenPair(
+    payload: Record<string, any>,
+    publicKey: string,
+    privateKey: string,
+  ) {
+    // accessToken
+    const accessToken = await this.jwtService.signAsync(payload, {
+      privateKey,
+      expiresIn: '10 minutes',
+    });
+    // refreshToken
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      privateKey,
+      expiresIn: '7 days',
+    });
+    // verify accessToken
+    await this.jwtService
+      .verifyAsync(accessToken, { publicKey })
+      .catch((error) => {
+        throw new UnauthorizedException('Invalid access token', error);
+      });
+
+    return { accessToken, refreshToken };
   }
 
-  async login(user: User) {
-    const payload = { username: user.usrn, sub: user.user_id };
-    return {
-      access_token: this.jwtService.sign(payload),
+  async register(registerUser: RegisterUser) {
+    if (!registerUser.usrn || !registerUser.pass)
+      throw new BadRequestException('Username and password are required');
+
+    const foundUser = await this.userRepository.findOne({
+      where: { usrn: registerUser.usrn },
+    });
+
+    if (foundUser) throw new ConflictException('Username already exists');
+
+    const hashedPassword = await bcrypt.hash(registerUser.pass, saltRounds);
+
+    const newUser = this.userRepository.create({
+      ...registerUser,
+      user_id: randomInt(99),
+      pass: hashedPassword,
+    });
+
+    await this.userRepository.save(newUser);
+
+    return { success: true, message: 'User created successfully' };
+  }
+
+  async login(loginUser: LoginUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { usrn: loginUser.usrn },
+    });
+
+    if (!foundUser) throw new UnauthorizedException('User not found');
+
+    const isPasswordMatch = await bcrypt.compare(
+      loginUser.pass,
+      foundUser.pass,
+    );
+
+    if (!isPasswordMatch) throw new UnauthorizedException('Invalid password');
+
+    const payload = {
+      user_id: foundUser.user_id,
+      usrn: foundUser.usrn,
+      role: foundUser.role,
     };
+
+    const { privateKey, publicKey } = generateKeyPairSync('rsa', {
+      modulusLength: 1024,
+      publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem',
+      },
+      privateKeyEncoding: {
+        type: 'pkcs8',
+        format: 'pem',
+      },
+    });
+
+    const tokens = await this.createTokenPair(payload, publicKey, privateKey);
+
+    const newKey = this.keyRepository.create({
+      user: foundUser,
+      public_key: publicKey,
+      private_key: privateKey,
+    });
+
+    await this.keyRepository.upsert(newKey, {
+      skipUpdateIfNoValuesChanged: true,
+      conflictPaths: ['user'],
+    });
+
+    return {
+      ...tokens,
+    };
+  }
+
+  async refreshToken(user_id: number, refresh_token: string) {
+    try {
+      const key = await this.keyRepository.findOne({
+        where: { user: { user_id } },
+      });
+
+      if (!key) throw new BadRequestException('User not found');
+
+      if (key.refresh_token_used.includes(refresh_token)) {
+        throw new ForbiddenException(
+          'Something went wrong! Please login again',
+        );
+      }
+
+      const decodeUser: JwtPayload = await this.jwtService.verifyAsync(
+        refresh_token,
+        {
+          publicKey: key.private_key,
+        },
+      );
+
+      const foundUser = await this.userRepository.findOne({
+        where: { user_id: decodeUser.user_id },
+      });
+
+      const payload = {
+        user_id: foundUser.user_id,
+        usrn: foundUser.usrn,
+        role: foundUser.role,
+      };
+
+      const tokens = await this.createTokenPair(
+        payload,
+        key.public_key,
+        key.private_key,
+      );
+
+      await this.keyRepository.update(
+        {
+          user: { user_id: decodeUser.user_id },
+        },
+        {
+          refresh_token_used: [...key.refresh_token_used, refresh_token],
+        },
+      );
+
+      return tokens;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async logout(user_id: number, refresh_token: string) {
+    try {
+      const key = await this.keyRepository.findOne({
+        where: { user: { user_id } },
+      });
+
+      if (!key) throw new BadRequestException('User not found');
+
+      const decodeUser: JwtPayload = await this.jwtService.verifyAsync(
+        refresh_token,
+        {
+          publicKey: key.private_key,
+        },
+      );
+
+      await this.keyRepository.update(
+        {
+          user: { user_id: decodeUser.user_id },
+        },
+        {
+          refresh_token_used: [...key.refresh_token_used, refresh_token],
+        },
+      );
+
+      return { success: true, message: 'Logout successfully' };
+    } catch (error) {
+      throw error;
+    }
   }
 }
