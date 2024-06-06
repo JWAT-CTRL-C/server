@@ -12,7 +12,7 @@ import { Workspace } from './workspace.entity';
 
 @Entity()
 export class Notification {
-  @PrimaryColumn('uuid')
+  @PrimaryColumn('varchar')
   noti_id: string;
   @Column('varchar', { length: 150, nullable: false })
   noti_tle: string;
@@ -25,12 +25,12 @@ export class Notification {
 
   // relations
   // user
-  @ManyToOne(() => User, (users) => users.notifications)
+  @ManyToOne(() => User, (user) => user.notifications)
   @JoinColumn({ name: 'auth_id' })
   user: User;
 
   // Workspace
-  @ManyToOne(() => Workspace, (workspaces) => workspaces.notifications)
+  @ManyToOne(() => Workspace, (workspace) => workspace.notifications)
   @JoinColumn({ name: 'wksp_id' })
   workspace: Workspace;
 }

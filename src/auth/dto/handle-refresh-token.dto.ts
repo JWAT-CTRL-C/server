@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class HandleRefreshToken {
+export class HandleRefreshTokenDTO {
   @IsString()
   @IsNotEmpty()
   refresh_token: string;

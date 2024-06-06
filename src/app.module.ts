@@ -8,6 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { AppLoggerMiddleware } from './logger/app.logger';
 import { AuthGuard } from './guard/auth.guard';
+import { BlogsModule } from './blogs/blogs.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { AuthGuard } from './guard/auth.guard';
     }),
     AuthModule,
     UsersModule,
+    BlogsModule,
+    CloudinaryModule,
   ],
   providers: [
     {

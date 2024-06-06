@@ -18,7 +18,7 @@ import { Notification } from './notification.entity';
 
 @Entity()
 export class Workspace {
-  @PrimaryColumn('uuid')
+  @PrimaryColumn('varchar')
   wksp_id: string;
   @Column('varchar', { length: 50, nullable: false })
   wksp_name: string;
@@ -33,7 +33,7 @@ export class Workspace {
 
   // relations
   // user-owner
-  @ManyToOne(() => User, (users) => users.workspacesOwner)
+  @ManyToOne(() => User, (user) => user.workspacesOwner)
   @JoinColumn({ name: 'owner_id' })
   owner: User;
 

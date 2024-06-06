@@ -1,6 +1,9 @@
 import { Tag } from './tag.entity';
 import { User } from './user.entity';
-import { BlogComment, BlogImage, BlogRating, Blog } from './blog.entity';
+import { Blog } from './blog.entity';
+import { BlogImage } from './blog-image.entity';
+import { BlogComment } from './blog-comment.entity';
+import { BlogRating } from './blog-rating.entity';
 import { Workspace } from './workspace.entity';
 import { Source } from './source.entity';
 import { Notification } from './notification.entity';

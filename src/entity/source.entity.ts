@@ -13,7 +13,7 @@ import { Blog } from './blog.entity';
 
 @Entity()
 export class Source {
-  @PrimaryColumn('uuid')
+  @PrimaryColumn('varchar')
   src_id: string;
   @Column({ type: 'varchar', length: 50, nullable: false })
   src_name: string;
@@ -26,7 +26,7 @@ export class Source {
 
   // Relations
   // Workspace
-  @ManyToOne(() => Workspace, (workspaces) => workspaces.sources)
+  @ManyToOne(() => Workspace, (workspace) => workspace.sources)
   @JoinColumn({ name: 'wksp_id' })
   workspace: Workspace;
 
