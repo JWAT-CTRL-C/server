@@ -32,17 +32,20 @@ export class AuthService {
     // accessToken
     const accessToken = await this.jwtService.signAsync(payload, {
       privateKey,
+      algorithm: 'RS256',
       expiresIn: '10 minutes',
     });
     // refreshToken
     const refreshToken = await this.jwtService.signAsync(payload, {
       privateKey,
+      algorithm: 'RS256',
       expiresIn: '7 days',
     });
     // verify accessToken
     await this.jwtService
       .verifyAsync(accessToken, { publicKey })
       .catch((error) => {
+        console.error(error);
         throw new UnauthorizedException('Invalid access token', error);
       });
 
@@ -93,7 +96,7 @@ export class AuthService {
     };
 
     const { privateKey, publicKey } = generateKeyPairSync('rsa', {
-      modulusLength: 1024,
+      modulusLength: 2048,
       publicKeyEncoding: {
         type: 'spki',
         format: 'pem',

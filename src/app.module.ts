@@ -11,14 +11,7 @@ import { AuthGuard } from './guard/auth.guard';
 
 @Module({
   imports: [
-    JwtModule.registerAsync({
-      global: true,
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-      }),
-      inject: [ConfigService],
-    }),
+    JwtModule.register({ global: true }),
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
