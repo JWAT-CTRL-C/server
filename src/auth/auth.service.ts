@@ -95,7 +95,6 @@ export class AuthService {
     const payload = {
       user_id: foundUser.user_id,
       usrn: foundUser.usrn,
-      role: foundUser.role,
     };
 
     const { privateKey, publicKey } = generateKeyPairSync('rsa', {
@@ -156,7 +155,6 @@ export class AuthService {
       const payload = {
         user_id: foundUser.user_id,
         usrn: foundUser.usrn,
-        role: foundUser.role,
       };
 
       const tokens = await this.createTokenPair(
