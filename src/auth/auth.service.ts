@@ -13,12 +13,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { User } from 'src/entity/user.entity';
 import { Key } from 'src/entity/key.entity';
-import { saltRounds } from 'src/lib/constant';
+import { saltRounds } from 'src/lib/constant/special';
 import { JwtPayload } from 'src/lib/type';
-import { RegisterUser } from './dto/register-user.dto';
-import { LoginUser } from './dto/login-user.dto';
-import { LogoutUser } from './dto/logout-user.dto';
-import { HandleRefreshToken } from './dto/handle-refresh-token.dto';
+import { RegisterUserDTO } from './dto/register-user.dto';
+import { LoginUserDTO } from './dto/login-user.dto';
+import { LogoutUserDTO } from './dto/logout-user.dto';
+import { HandleRefreshTokenDTO } from './dto/handle-refresh-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,17 +34,19 @@ export class AuthService {
     privateKey: string,
   ) {
     // accessToken
-    const accessToken = await this.jwtService.signAsync(payload, {
-      privateKey,
-      algorithm: 'RS256',
-      expiresIn: '10 minutes',
-    });
     // refreshToken
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      privateKey,
-      algorithm: 'RS256',
-      expiresIn: '7 days',
-    });
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, {
+        privateKey,
+        algorithm: 'RS256',
+        expiresIn: '10 minutes',
+      }),
+      this.jwtService.signAsync(payload, {
+        privateKey,
+        algorithm: 'RS256',
+        expiresIn: '7 days',
+      }),
+    ]);
     // verify accessToken
     await this.jwtService
       .verifyAsync(accessToken, { publicKey })
@@ -56,7 +58,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async register(registerUser: RegisterUser) {
+  async register(registerUser: RegisterUserDTO) {
     const foundUser = await this.userRepository.findOne({
       where: { usrn: registerUser.usrn },
     });
@@ -76,7 +78,7 @@ export class AuthService {
     return { success: true, message: 'User created successfully' };
   }
 
-  async login(loginUser: LoginUser) {
+  async login(loginUser: LoginUserDTO) {
     const foundUser = await this.userRepository.findOne({
       where: { usrn: loginUser.usrn },
     });
@@ -93,7 +95,6 @@ export class AuthService {
     const payload = {
       user_id: foundUser.user_id,
       usrn: foundUser.usrn,
-      role: foundUser.role,
     };
 
     const { privateKey, publicKey } = generateKeyPairSync('rsa', {
@@ -126,7 +127,7 @@ export class AuthService {
     };
   }
 
-  async handleRefreshToken({ refresh_token, user_id }: HandleRefreshToken) {
+  async handleRefreshToken({ refresh_token, user_id }: HandleRefreshTokenDTO) {
     try {
       const key = await this.keyRepository.findOne({
         where: { user: { user_id } },
@@ -154,7 +155,6 @@ export class AuthService {
       const payload = {
         user_id: foundUser.user_id,
         usrn: foundUser.usrn,
-        role: foundUser.role,
       };
 
       const tokens = await this.createTokenPair(
@@ -178,7 +178,7 @@ export class AuthService {
     }
   }
 
-  async logout({ refresh_token, user_id }: LogoutUser) {
+  async logout({ refresh_token, user_id }: LogoutUserDTO) {
     try {
       const key = await this.keyRepository.findOne({
         where: { user: { user_id } },

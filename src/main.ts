@@ -20,6 +20,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('Auth', 'Endpoints for authentication')
     .addTag('Users', 'Endpoints for users management')
+    .addTag('Blogs', 'Endpoints for blogs management')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, configSwagger);

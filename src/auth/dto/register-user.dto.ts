@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsString, IsOptional, IsIn } from 'class-validator';
 import { RolesType } from 'src/lib/type';
 
-export class RegisterUser {
+export class RegisterUserDTO {
   @IsString()
   @IsNotEmpty()
   usrn: string;

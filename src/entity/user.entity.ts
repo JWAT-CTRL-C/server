@@ -10,8 +10,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Workspace } from './workspace.entity';
-import { BlogComment, BlogRating, Blog } from './blog.entity';
+import { Blog } from './blog.entity';
 import { Notification } from './notification.entity';
+import { BlogRating } from './blog-rating.entity';
+import { BlogComment } from './blog-comment.entity';
 
 @Entity()
 export class User {

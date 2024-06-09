@@ -12,7 +12,7 @@ import { Request } from 'express';
 import { DataSource } from 'typeorm';
 
 import { Key } from 'src/entity/key.entity';
-import { HEADER, IS_PUBLIC_KEY } from 'src/lib/constant';
+import { HEADER, IS_PUBLIC_KEY } from 'src/lib/constant/special';
 import { JwtPayload } from 'src/lib/type';
 
 @Injectable()

@@ -3,10 +3,10 @@ import { AuthService } from './auth.service';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 
 import { Public } from 'src/decorator/public.decorator';
-import { RegisterUser } from './dto/register-user.dto';
-import { LoginUser } from './dto/login-user.dto';
-import { LogoutUser } from './dto/logout-user.dto';
-import { HandleRefreshToken } from './dto/handle-refresh-token.dto';
+import { RegisterUserDTO } from './dto/register-user.dto';
+import { LoginUserDTO } from './dto/login-user.dto';
+import { LogoutUserDTO } from './dto/logout-user.dto';
+import { HandleRefreshTokenDTO } from './dto/handle-refresh-token.dto';
 
 @Public()
 @ApiTags('Auth')
@@ -32,7 +32,7 @@ export class AuthController {
     },
   })
   @HttpCode(HttpStatus.PERMANENT_REDIRECT)
-  async register(@Body() registerUser: RegisterUser) {
+  async register(@Body() registerUser: RegisterUserDTO) {
     return this.authService.register(registerUser);
   }
 
@@ -53,7 +53,7 @@ export class AuthController {
       required: ['usrn', 'pass'],
     },
   })
-  async login(@Body() loginUser: LoginUser) {
+  async login(@Body() loginUser: LoginUserDTO) {
     return this.authService.login(loginUser);
   }
 
@@ -74,7 +74,7 @@ export class AuthController {
       required: ['refresh_token'],
     },
   })
-  async handleRefreshToken(@Body() data: HandleRefreshToken) {
+  async handleRefreshToken(@Body() data: HandleRefreshTokenDTO) {
     return this.authService.handleRefreshToken(data);
   }
 
@@ -95,7 +95,7 @@ export class AuthController {
       required: ['refresh_token'],
     },
   })
-  async logout(@Body() logoutUser: LogoutUser) {
+  async logout(@Body() logoutUser: LogoutUserDTO) {
     return this.authService.logout(logoutUser);
   }
 }
