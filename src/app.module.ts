@@ -18,10 +18,14 @@ import { redisStore } from 'cache-manager-redis-yet';
   imports: [
     JwtModule.register({ global: true }),
     ConfigModule.forRoot({ isGlobal: true }),
-    CacheModule.register<RedisClientOptions>({
+    CacheModule.registerAsync<RedisClientOptions>({
       isGlobal: true,
-      store: redisStore,
-      url: process.env.REDIS_URL,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        store: redisStore,
+        url: configService.get<string>('REDIS_URL'),
+      }),
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
