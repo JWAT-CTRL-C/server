@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { JwtPayload } from 'src/lib/type';
 import { LoginUserDTO } from './dto/login-user.dto';
 import { LogoutUserDTO } from './dto/logout-user.dto';
 import { HandleRefreshTokenDTO } from './dto/handle-refresh-token.dto';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +25,7 @@ export class AuthService {
     private jwtService: JwtService,
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(Key) private keyRepository: Repository<Key>,
+    @Inject(CACHE_MANAGER) private cacheService: Cache,
   ) {}
 
   async createTokenPair(

@@ -10,11 +10,19 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { AuthGuard } from './guard/auth.guard';
 import { AppLoggerMiddleware } from './logger/app.logger';
 import { UsersModule } from './users/users.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { RedisClientOptions } from 'redis';
+import { redisStore } from 'cache-manager-redis-yet';
 
 @Module({
   imports: [
     JwtModule.register({ global: true }),
     ConfigModule.forRoot({ isGlobal: true }),
+    CacheModule.register<RedisClientOptions>({
+      isGlobal: true,
+      store: redisStore,
+      url: process.env.REDIS_URL,
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
