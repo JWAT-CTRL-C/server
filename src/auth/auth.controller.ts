@@ -1,9 +1,8 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 
 import { Public } from 'src/decorator/public.decorator';
-import { RegisterUserDTO } from './dto/register-user.dto';
 import { LoginUserDTO } from './dto/login-user.dto';
 import { LogoutUserDTO } from './dto/logout-user.dto';
 import { HandleRefreshTokenDTO } from './dto/handle-refresh-token.dto';
@@ -13,28 +12,6 @@ import { HandleRefreshTokenDTO } from './dto/handle-refresh-token.dto';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  @Post('register')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        usrn: {
-          example: 'username',
-          type: 'string',
-        },
-        pass: {
-          example: 'password',
-          type: 'string',
-        },
-      },
-      required: ['usrn', 'pass'],
-    },
-  })
-  @HttpCode(HttpStatus.PERMANENT_REDIRECT)
-  async register(@Body() registerUser: RegisterUserDTO) {
-    return this.authService.register(registerUser);
-  }
 
   @Post('login')
   @ApiBody({

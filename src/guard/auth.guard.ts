@@ -12,7 +12,7 @@ import { Request } from 'express';
 import { DataSource } from 'typeorm';
 
 import { Key } from 'src/entity/key.entity';
-import { HEADER, IS_PUBLIC_KEY } from 'src/lib/constant/special';
+import { HEADER, IS_PUBLIC_KEY } from 'src/lib/constant';
 import { JwtPayload } from 'src/lib/type';
 
 @Injectable()
@@ -54,7 +54,7 @@ export class AuthGuard implements CanActivate {
       request['user'] = payload;
     } catch (error) {
       console.error(error);
-      throw new HttpException(error.message, error.status ?? 403);
+      throw new HttpException(error.message, error.status ?? 419);
     }
 
     return true;

@@ -34,6 +34,8 @@ export class BlogsService {
       where: { user_id: user.user_id },
     });
 
+    if (!foundUser) throw new NotFoundException('User not found');
+
     const tags: Tag[] = [];
 
     let blog_image: BlogImage = undefined;
@@ -68,8 +70,6 @@ export class BlogsService {
       tags.push(...foundTags);
     }
 
-    if (!foundUser) throw new NotFoundException('User not found');
-
     const blog = this.blogRepository.create({
       ...createBlogDto,
       blog_id: generateUUID('blog', user.user_id),
@@ -103,7 +103,7 @@ export class BlogsService {
       success: true,
       data: {
         public_id: image.public_id,
-        url: image.secure_url,
+        url: image.url,
       },
     };
   }

@@ -5,7 +5,7 @@ import { BlogImage } from './blog-image.entity';
 import { BlogComment } from './blog-comment.entity';
 import { BlogRating } from './blog-rating.entity';
 import { Workspace } from './workspace.entity';
-import { Source } from './source.entity';
+import { Resource } from './resource.entity';
 import { Notification } from './notification.entity';
 import { Key } from './key.entity';
 
@@ -16,7 +16,7 @@ export const entities = [
   BlogImage,
   BlogComment,
   BlogRating,
-  Source,
+  Resource,
   Workspace,
   Notification,
   Key,
