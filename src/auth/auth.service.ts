@@ -100,6 +100,7 @@ export class AuthService {
     });
 
     return {
+      user_id: foundUser.user_id,
       ...tokens,
     };
   }
