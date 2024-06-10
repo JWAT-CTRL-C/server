@@ -13,7 +13,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Blog } from './blog.entity';
-import { Source } from './source.entity';
+import { Resource } from './resource.entity';
 import { Notification } from './notification.entity';
 
 @Entity()
@@ -51,8 +51,8 @@ export class Workspace {
   blogs: Blog[];
 
   // Sources
-  @OneToMany(() => Source, (sources) => sources.workspace)
-  sources: Source[];
+  @OneToMany(() => Resource, (resource) => resource.workspace)
+  resources: Resource[];
 
   // Notifications
   @OneToMany(() => Notification, (notifications) => notifications.workspace)

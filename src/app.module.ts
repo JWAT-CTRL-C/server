@@ -1,15 +1,15 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { AppLoggerMiddleware } from './logger/app.logger';
-import { AuthGuard } from './guard/auth.guard';
 import { BlogsModule } from './blogs/blogs.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { AuthGuard } from './guard/auth.guard';
+import { AppLoggerMiddleware } from './logger/app.logger';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -20,16 +20,20 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get('PGHOST'),
-        port: parseInt(configService.get('PG_PORT'), 10),
-        database: configService.get('PGDATABASE'),
-        username: configService.get('PGUSER'),
-        password: configService.get('PGPASSWORD'),
-        entities: ['dist/entity/*.entity.js'],
-        migrations: ['dist/db/migrations/*.js'],
+        host: configService.get<string>('PGHOST'),
+        port: configService.get<number>('PGPORT'),
+        username: configService.get<string>('PGUSER'),
+        password: configService.get<string>('PGPASSWORD'),
+        database: configService.get<string>('PGDATABASE'),
+        autoLoadEntities: true,
+        entities: [__dirname + '/entity/*.entity{.ts,.js}'],
+        migrations: [__dirname + '/db/migrations/*{.ts,.js}'],
         // synchronize: true,
         logging: true,
         ssl: true,
+        cli: {
+          migrationsDir: __dirname + '/db/migrations/',
+        },
       }),
     }),
     AuthModule,

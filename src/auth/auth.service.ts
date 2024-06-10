@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   ForbiddenException,
   Injectable,
   UnauthorizedException,
@@ -8,14 +7,12 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
-import { generateKeyPairSync, randomInt } from 'crypto';
+import { generateKeyPairSync } from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { User } from 'src/entity/user.entity';
 import { Key } from 'src/entity/key.entity';
-import { saltRounds } from 'src/lib/constant/special';
 import { JwtPayload } from 'src/lib/type';
-import { RegisterUserDTO } from './dto/register-user.dto';
 import { LoginUserDTO } from './dto/login-user.dto';
 import { LogoutUserDTO } from './dto/logout-user.dto';
 import { HandleRefreshTokenDTO } from './dto/handle-refresh-token.dto';
@@ -56,26 +53,6 @@ export class AuthService {
       });
 
     return { accessToken, refreshToken };
-  }
-
-  async register(registerUser: RegisterUserDTO) {
-    const foundUser = await this.userRepository.findOne({
-      where: { usrn: registerUser.usrn },
-    });
-
-    if (foundUser) throw new ConflictException('Username already exists');
-
-    const hashedPassword = await bcrypt.hash(registerUser.pass, saltRounds);
-
-    const newUser = this.userRepository.create({
-      ...registerUser,
-      user_id: randomInt(99),
-      pass: hashedPassword,
-    });
-
-    await this.userRepository.save(newUser);
-
-    return { success: true, message: 'User created successfully' };
   }
 
   async login(loginUser: LoginUserDTO) {
@@ -123,6 +100,7 @@ export class AuthService {
     });
 
     return {
+      user_id: foundUser.user_id,
       ...tokens,
     };
   }

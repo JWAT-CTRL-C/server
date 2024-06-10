@@ -12,13 +12,13 @@ import { Workspace } from './workspace.entity';
 import { Blog } from './blog.entity';
 
 @Entity()
-export class Source {
+export class Resource {
   @PrimaryColumn('varchar')
-  src_id: string;
+  resrc_id: string;
   @Column({ type: 'varchar', length: 50, nullable: false })
-  src_name: string;
+  resrc_name: string;
   @Column({ type: 'text' })
-  src_url: string;
+  resrc_url: string;
   @CreateDateColumn()
   crd_at: Date;
   @UpdateDateColumn()
@@ -26,7 +26,7 @@ export class Source {
 
   // Relations
   // Workspace
-  @ManyToOne(() => Workspace, (workspace) => workspace.sources)
+  @ManyToOne(() => Workspace, (workspace) => workspace.resources)
   @JoinColumn({ name: 'wksp_id' })
   workspace: Workspace;
 
