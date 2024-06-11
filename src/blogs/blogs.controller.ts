@@ -138,7 +138,12 @@ export class BlogsController {
   }
 
   @Get('')
-  findAll() {
-    return this.blogsService.findAll();
+  async findAll() {
+    return await this.blogsService.findAll();
+  }
+
+  @Get('for/user')
+  async findAllByUserId(@User() user: DecodeUser) {
+    return await this.blogsService.findAllByUserId(user);
   }
 }

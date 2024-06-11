@@ -17,6 +17,7 @@ import { Tag } from 'src/entity/tag.entity';
 import { generateUUID } from 'src/lib/utils';
 import { relationsBlog, selectBlog } from 'src/lib/constant/blog';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Workspace } from 'src/entity/workspace.entity';
 
 @Injectable()
 export class BlogsService {
@@ -27,6 +28,8 @@ export class BlogsService {
     private readonly blogImageRepository: Repository<BlogImage>,
     @InjectRepository(Tag) private readonly tagRepository: Repository<Tag>,
     private readonly cloudinaryService: CloudinaryService,
+    @InjectRepository(Workspace)
+    private readonly workspaceRepository: Repository<Workspace>,
   ) {}
 
   async createBlog(createBlogDto: CreateBlogDto, user: DecodeUser) {
@@ -122,13 +125,23 @@ export class BlogsService {
     return `This action updates a #${blog_id} blog`;
   }
 
-  remove(blog_id: string) {
-    return `This action removes a #${blog_id} blog`;
+  async remove(blog_id: string) {
+    await this.blogRepository.softDelete(blog_id);
+
+    return `Delete blog with id #${blog_id} successfully`;
   }
 
   async findAll() {
     const blogs = await this.blogRepository.find({
       relations: relationsBlog,
+    });
+    return blogs;
+  }
+
+  async findAllByUserId(user: DecodeUser) {
+    const blogs = await this.blogRepository.find({
+      relations: relationsBlog,
+      where: { user: { user_id: user.user_id } },
     });
     return blogs;
   }
