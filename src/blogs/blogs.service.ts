@@ -125,4 +125,11 @@ export class BlogsService {
   remove(blog_id: string) {
     return `This action removes a #${blog_id} blog`;
   }
+
+  async findAll() {
+    const blogs = await this.blogRepository.find({
+      relations: relationsBlog,
+    });
+    return blogs;
+  }
 }

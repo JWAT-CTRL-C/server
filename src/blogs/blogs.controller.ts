@@ -136,4 +136,9 @@ export class BlogsController {
   remove(@Param('blog_id') blog_id: string) {
     return this.blogsService.remove(blog_id);
   }
+
+  @Get('')
+  findAll() {
+    return this.blogsService.findAll();
+  }
 }
