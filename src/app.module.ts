@@ -14,6 +14,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { RedisClientOptions } from 'redis';
 import { redisStore } from 'cache-manager-redis-yet';
 import { NotificationsModule } from './notifications/notifications.module';
+import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     BlogsModule,
     CloudinaryModule,
     NotificationsModule,
+    WorkspacesModule
   ],
   providers: [
     {

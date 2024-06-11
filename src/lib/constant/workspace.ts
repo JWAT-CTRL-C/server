@@ -27,3 +27,49 @@ export const relationWorkspace = {
   resources: true,
   notifications: true,
 };
+export const selectBasicWorkspace = {
+    wksp_id: true,
+    wksp_name: true,
+    wksp_desc: true,
+    users: {
+        user_id: true,
+        usrn: true,
+        role: true
+    }
+}
+export const selectUserRelation = {
+    user_id: true,
+    usrn: true,
+    role: true,
+}
+export const selectOneWorkspace = {
+    ...selectBasicWorkspace,
+    owner: {
+        ...selectUserRelation
+    }
+};
+export const workspaceBasicCondition = {
+    deleted_at: null
+}
+export const relationWithUser = {
+    users: true
+}
+
+export const relationWithOwner = {
+    owner: true
+}
+export const relationWithBlog = {
+    blogs: true
+}
+export const relationWithResources = {
+    resources: true
+}
+export const relationWithNotifications = {
+    notifications: true
+}
+export const relationWithWorkspace = {
+    workspaces: true
+};
+export const defaultCondition = {
+    deleted_at: null
+}

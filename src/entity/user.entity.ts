@@ -45,13 +45,13 @@ export class User {
 
   // Relations
   // Workspaces
-  @ManyToMany(() => Workspace, (workspaces) => workspaces.users)
-  @JoinTable({
-    name: 'user_workspace',
-    joinColumn: { name: 'user_id' },
-    inverseJoinColumn: { name: 'wksp_id' },
-  })
-  workspaces: Workspace[];
+  // @ManyToMany(() => Workspace, (workspaces) => workspaces.users)
+  // @JoinTable({
+  //   name: 'user_workspace',
+  //   joinColumn: { name: 'user_id' },
+  //   inverseJoinColumn: { name: 'wksp_id' },
+  // })
+  // workspaces: Workspace[];
 
   // Workspaces-owner
   @OneToMany(() => Workspace, (workspaces) => workspaces.owner)
