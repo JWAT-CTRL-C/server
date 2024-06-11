@@ -3,24 +3,24 @@ import {
   ExecutionContext,
   ForbiddenException,
   HttpException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { DataSource } from 'typeorm';
 
-import { Key } from 'src/entity/key.entity';
 import { HEADER, IS_PUBLIC_KEY } from 'src/lib/constant';
-import { JwtPayload } from 'src/lib/type';
+import { JwtPayload, KeyPair, TokenPair } from 'src/lib/type';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
     private reflector: Reflector,
-    private dataSource: DataSource,
+    @Inject(CACHE_MANAGER) private cacheService: Cache,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -38,9 +38,9 @@ export class AuthGuard implements CanActivate {
     if (!token) throw new UnauthorizedException('Token is required');
 
     try {
-      const key = await this.dataSource.getRepository(Key).findOne({
-        where: { user: { user_id } },
-      });
+      const key = await this.cacheService.get<TokenPair & KeyPair>(
+        `user::${user_id.toString()}`,
+      );
 
       if (!key) throw new UnauthorizedException('Key is not found');
 
