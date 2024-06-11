@@ -18,3 +18,10 @@ export type KeyPair = {
   public_key: string;
   private_key: string;
 };
+
+export enum NotificationType {
+  SETUP_WORKSPACE = 'setup_workspace',
+  CREATE_NORMAL = 'create_normal_notification',
+  CREATE_WORKSPACE = 'create_workspace_notification',
+  NEW = 'new_notification',
+}
