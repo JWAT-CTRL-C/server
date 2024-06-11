@@ -100,7 +100,7 @@ export class AuthService {
     await this.cacheService.set(
       `user::${foundUser.user_id.toString()}`,
       { ...tokens, public_key: publicKey, private_key: privateKey },
-      7 * 24 * 60 * 60,
+      7 * 24 * 60 * 60 * 1000,
     );
 
     return {
@@ -141,8 +141,8 @@ export class AuthService {
 
       await this.cacheService.set(
         `user::${foundUser.user_id.toString()}`,
-        { ...tokens, public_key: key.public_key, private_key: key.private_key },
-        7 * 24 * 60 * 60,
+        { ...key, ...tokens },
+        7 * 24 * 60 * 60 * 1000,
       );
 
       return tokens;
