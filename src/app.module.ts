@@ -13,6 +13,7 @@ import { UsersModule } from './users/users.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { RedisClientOptions } from 'redis';
 import { redisStore } from 'cache-manager-redis-yet';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { redisStore } from 'cache-manager-redis-yet';
     UsersModule,
     BlogsModule,
     CloudinaryModule,
+    NotificationsModule,
   ],
   providers: [
     {
