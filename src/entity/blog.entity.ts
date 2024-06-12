@@ -68,9 +68,8 @@ export class Blog {
   blogRatings: BlogRating[];
 
   // Resource
-  @OneToOne(() => Resource)
+  @OneToOne(() => Resource, (resource) => resource.blog)
   resource: Resource;
-
   @DeleteDateColumn()
   dld_at: Date;
 }
