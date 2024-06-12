@@ -18,8 +18,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { BlogsService } from './blogs.service';
-import { CreateBlogDto } from './dto/create-blog.dto';
-import { UpdateBlogDto } from './dto/update-blog.dto';
+import { CreateBlogDTO } from './dto/create-blog.dto';
+import { UpdateBlogDTO } from './dto/update-blog.dto';
 import { User } from 'src/decorator/user.decorator';
 import { DecodeUser } from 'src/lib/type';
 
@@ -61,8 +61,8 @@ export class BlogsController {
       required: ['title', 'content'],
     },
   })
-  create(@Body() createBlogDto: CreateBlogDto, @User() user: DecodeUser) {
-    return this.blogsService.createBlog(createBlogDto, user);
+  create(@Body() createBlogDTO: CreateBlogDTO, @User() user: DecodeUser) {
+    return this.blogsService.createBlog(createBlogDTO, user);
   }
 
   @Post('upload-image')
@@ -122,9 +122,9 @@ export class BlogsController {
   })
   update(
     @Param('blog_id') blog_id: string,
-    @Body() updateBlogDto: UpdateBlogDto,
+    @Body() updateBlogDTO: UpdateBlogDTO,
   ) {
-    return this.blogsService.update(blog_id, updateBlogDto);
+    return this.blogsService.update(blog_id, updateBlogDTO);
   }
 
   @Delete(':blog_id')
