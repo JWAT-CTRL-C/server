@@ -55,7 +55,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     BlogsModule,
     CloudinaryModule,
     NotificationsModule,
-    WorkspacesModule
+    WorkspacesModule,
   ],
   providers: [
     {

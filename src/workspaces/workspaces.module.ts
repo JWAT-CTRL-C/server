@@ -8,9 +8,7 @@ import { User } from 'src/entity/user.entity';
 import { Workspace } from 'src/entity/workspace.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User,Resource,Blog,Workspace]),
-  ],
+  imports: [TypeOrmModule.forFeature([User, Resource, Blog, Workspace])],
   controllers: [WorkspacesController],
   providers: [WorkspacesService],
 })

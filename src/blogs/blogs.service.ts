@@ -7,8 +7,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
-import { CreateBlogDto } from './dto/create-blog.dto';
-import { UpdateBlogDto } from './dto/update-blog.dto';
+import { CreateBlogDTO } from './dto/create-blog.dto';
+import { UpdateBlogDTO } from './dto/update-blog.dto';
 import { DecodeUser } from 'src/lib/type';
 import { User } from 'src/entity/user.entity';
 import { Blog } from 'src/entity/blog.entity';
@@ -29,7 +29,7 @@ export class BlogsService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async createBlog(createBlogDto: CreateBlogDto, user: DecodeUser) {
+  async createBlog(createBlogDTO: CreateBlogDTO, user: DecodeUser) {
     const foundUser = await this.userRepository.findOne({
       where: { user_id: user.user_id },
     });
@@ -40,21 +40,21 @@ export class BlogsService {
 
     let blog_image: BlogImage = undefined;
 
-    if (createBlogDto.blog_img_url) {
+    if (createBlogDTO.blog_img_url) {
       blog_image = this.blogImageRepository.create({
         blog_img_id: generateUUID('blog_img', user.user_id),
-        blog_img_url: createBlogDto.blog_img_url,
+        blog_img_url: createBlogDTO.blog_img_url,
       });
     }
 
-    if (createBlogDto.tags && createBlogDto.tags.length) {
+    if (createBlogDTO.tags && createBlogDTO.tags.length) {
       const foundTags = await this.tagRepository.find({
-        where: { tag_name: In(createBlogDto.tags) },
+        where: { tag_name: In(createBlogDTO.tags) },
       });
 
-      if (foundTags.length !== createBlogDto.tags.length) {
+      if (foundTags.length !== createBlogDTO.tags.length) {
         const newTags: Tag[] = [];
-        for (const tagName of createBlogDto.tags) {
+        for (const tagName of createBlogDTO.tags) {
           if (!foundTags.find((tag) => tag.tag_name === tagName)) {
             const newTag = this.tagRepository.create({
               tag_name: tagName,
@@ -71,10 +71,10 @@ export class BlogsService {
     }
 
     const blog = this.blogRepository.create({
-      ...createBlogDto,
+      ...createBlogDTO,
       blog_id: generateUUID('blog', user.user_id),
       user,
-      workspace: { wksp_id: createBlogDto.wksp_id },
+      workspace: { wksp_id: createBlogDTO.wksp_id },
       blogImage: blog_image,
       tags,
     });
@@ -118,7 +118,7 @@ export class BlogsService {
     return blog;
   }
 
-  update(blog_id: string, updateBlogDto: UpdateBlogDto) {
+  update(blog_id: string, updateBlogDTO: UpdateBlogDTO) {
     return `This action updates a #${blog_id} blog`;
   }
 

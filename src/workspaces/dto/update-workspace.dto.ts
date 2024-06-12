@@ -6,9 +6,9 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { CreateWorkspaceDto } from './create-workspace.dto';
+import { CreateWorkspaceDTO } from './create-workspace.dto';
 
-export class UpdateWorkspaceDto {
+export class UpdateWorkspaceDTO {
   @IsNotEmpty()
   @IsString()
   wksp_name: string;

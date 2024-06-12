@@ -38,7 +38,7 @@ export class Workspace {
   owner: User;
 
   // Users
-  @ManyToMany(() => User)
+  @ManyToMany(() => User, (user) => user.workspaces)
   @JoinTable({
     name: 'user_workspace',
     joinColumn: { name: 'wksp_id' },

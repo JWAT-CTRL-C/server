@@ -11,7 +11,10 @@ export const hashMD5 = (data: string) => {
   return createHash('md5').update(data).digest('hex');
 };
 
-export const generateUUID = (entityName: entityName, ownerID: number|string) => {
+export const generateUUID = (
+  entityName: entityName,
+  ownerID: number | string,
+) => {
   switch (entityName) {
     case 'blog':
       return `${ownerID}-${hashMD5(entityName)}-${Date.now()}`;

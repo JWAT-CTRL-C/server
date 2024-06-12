@@ -1,7 +1,7 @@
-import { IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
-export class AddMemberDto{
-    @IsNotEmpty()
-    @IsNumber()
-    user_id: number;
+export class AddMemberDTO {
+  @IsNotEmpty()
+  @IsNumber()
+  user_id: number;
 }

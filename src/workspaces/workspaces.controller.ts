@@ -9,14 +9,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { WorkspacesService } from './workspaces.service';
-import { CreateWorkspaceDto } from './dto/create-workspace.dto';
-import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
+import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
+import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 import { Roles } from 'src/decorator/roles.decorator';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
-import { AddResourceDto } from './dto/add-resource.dto';
-import { AddMemberDto } from './dto/add-memeber.dto';
+import { AddResourceDTO } from './dto/add-resource.dto';
+import { AddMemberDTO } from './dto/add-memeber.dto';
 import { RolesGuard } from 'src/guard/roles.guard';
-import { FranchiseWorkspaceDto } from './dto/franchise-workspace.dto';
+import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
 import { User } from 'src/decorator/user.decorator';
 import { DecodeUser } from 'src/lib/type';
 @UseGuards(RolesGuard)
@@ -28,20 +28,20 @@ export class WorkspacesController {
   @Post()
   @Roles('MA', 'HM', 'PM')
   create(
-    @Body() createWorkspaceDto: CreateWorkspaceDto,
+    @Body() createWorkspaceDTO: CreateWorkspaceDTO,
     @User() owner: DecodeUser,
   ) {
-    return this.workspacesService.create(createWorkspaceDto,owner);
+    return this.workspacesService.create(createWorkspaceDTO, owner);
   }
   // Update workspace
   @Patch(':wksp_id')
   @Roles('MA', 'HM', 'PM')
   update(
     @Param('wksp_id') wksp_id: string,
-    @Body() updateWorkspaceDto: UpdateWorkspaceDto,
+    @Body() updateWorkspaceDTO: UpdateWorkspaceDTO,
     @User() owner: DecodeUser,
   ) {
-    return this.workspacesService.update(wksp_id, updateWorkspaceDto, owner);
+    return this.workspacesService.update(wksp_id, updateWorkspaceDTO, owner);
   }
   @Get(':wksp_id')
   getWorkspace(@Param('wksp_id') wksp_id: string) {
@@ -49,8 +49,12 @@ export class WorkspacesController {
   }
   // Get all workspace
   @Get()
-  getAllWorkspace() {
-    return this.workspacesService.getAllWorkspace();
+  getAllWorkspaces() {
+    return this.workspacesService.getAllWorkspaces();
+  }
+  @Get('me')
+  getUsersWorkspaces(@User() user: DecodeUser) {
+    return this.workspacesService.getUsersWorkspaces(user);
   }
   // Soft delete workspace
   @Delete(':wksp_id')
@@ -67,7 +71,7 @@ export class WorkspacesController {
   @Roles('MA', 'HM', 'PM')
   addMember(
     @Param('wksp_id') wksp_id: string,
-    @Body() member: AddMemberDto,
+    @Body() member: AddMemberDTO,
     @User() owner: DecodeUser,
   ) {
     return this.workspacesService.addMember(wksp_id, member, owner);
@@ -78,7 +82,7 @@ export class WorkspacesController {
   @Roles('MA', 'HM', 'PM')
   removeMember(
     @Param('wksp_id') wksp_id: string,
-    @Body() member: AddMemberDto,
+    @Body() member: AddMemberDTO,
     @User() owner: DecodeUser,
   ) {
     return this.workspacesService.removeMember(wksp_id, member, owner);
@@ -89,7 +93,7 @@ export class WorkspacesController {
   @Roles('MA', 'HM', 'PM')
   franchiseWorkspace(
     @Param('wksp_id') wksp_id: string,
-    @Body() data: FranchiseWorkspaceDto,
+    @Body() data: FranchiseWorkspaceDTO,
     @User() user: DecodeUser,
   ) {
     console.log(user);
@@ -97,7 +101,7 @@ export class WorkspacesController {
   }
 
   // @Post('resources')
-  // addResource(@Body() resource:AddResourceDto) {
+  // addResource(@Body() resource:AddResourceDTO) {
   //   return this.workspacesService.addResource(resource);
   // }
 }

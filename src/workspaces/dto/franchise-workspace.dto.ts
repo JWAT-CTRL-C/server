@@ -1,7 +1,7 @@
-import { IsNotEmpty, IsNumber } from "class-validator";
+import { IsNotEmpty, IsNumber } from 'class-validator';
 
-export class FranchiseWorkspaceDto {
-    @IsNotEmpty()
-    @IsNumber()
-    user_id: number;
+export class FranchiseWorkspaceDTO {
+  @IsNotEmpty()
+  @IsNumber()
+  user_id: number;
 }

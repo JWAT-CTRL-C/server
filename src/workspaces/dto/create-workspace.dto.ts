@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsNumber, isString, IsString } from 'class-validator';
-export class CreateWorkspaceDto {
+export class CreateWorkspaceDTO {
   @IsNotEmpty()
   @IsString()
   wksp_name: string;
