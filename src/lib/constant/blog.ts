@@ -8,9 +8,8 @@ export const relationsBlog = {
   blogComments: true,
   blogRatings: true,
 
-  workspace: {
-    resources: true,
-  },
+  workspace: true,
+  resource: true,
 };
 
 export const selectBlogImage = {

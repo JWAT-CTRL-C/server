@@ -137,7 +137,7 @@ export class BlogsController {
     return this.blogsService.remove(blog_id);
   }
 
-  @Get('')
+  @Get()
   async findAll() {
     return await this.blogsService.findAll();
   }
