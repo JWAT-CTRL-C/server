@@ -14,6 +14,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ChangePassDTO } from './dto/change-pass.dto';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
+import { DecodeUser } from 'src/lib/type';
 
 @Injectable()
 export class UsersService {
@@ -21,7 +22,7 @@ export class UsersService {
     @InjectRepository(User) private userRepository: Repository<User>,
   ) {}
 
-  async createUser(createUserDTO: CreateUserDTO) {
+  async createUser(createUserDTO: CreateUserDTO, user: DecodeUser) {
     const foundUser = await this.userRepository.findOne({
       where: { usrn: createUserDTO.usrn },
     });
@@ -34,6 +35,7 @@ export class UsersService {
       ...createUserDTO,
       user_id: randomInt(99),
       pass: hashedPassword,
+      crd_user_id: user.user_id,
     });
 
     await this.userRepository.save(newUser);
@@ -62,12 +64,28 @@ export class UsersService {
     return { success: true, message: 'Password changed successfully' };
   }
 
-  async updateProfile(updateProfileDTO: UpdateProfileDTO) {
+  async updateProfile(
+    user_id: number,
+    updateProfileDTO: UpdateProfileDTO,
+    user: DecodeUser,
+  ) {
     await this.userRepository.update(
-      { user_id: updateProfileDTO.user_id },
-      updateProfileDTO,
+      { user_id: user_id },
+      { ...updateProfileDTO, upd_user_id: user.user_id },
     );
 
     return { success: true, message: 'Profile updated successfully' };
+  }
+
+  async removeUser(user_id: number, user: DecodeUser) {
+    await Promise.all([
+      this.userRepository.softDelete({ user_id }),
+      this.userRepository.update(
+        { user_id },
+        { deleted_user_id: user.user_id },
+      ),
+    ]);
+
+    return { success: true, message: 'User deleted successfully' };
   }
 }

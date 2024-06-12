@@ -1,3 +1,3 @@
-import { AddMemberDTO } from './add-memeber.dto';
+import { AddMemberDTO } from './add-member.dto';
 
 export class RemoveMemberDTO extends AddMemberDTO {}

@@ -3,8 +3,23 @@ import { User } from 'src/decorator/user.decorator';
 import { RolesGuard } from 'src/guard/roles.guard';
 import { DecodeUser } from 'src/lib/type';
 
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiHeader, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiHeader,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { ChangePassDTO } from './dto/change-pass.dto';
 import { CreateUserDTO } from './dto/create-user.dto';
@@ -40,8 +55,11 @@ export class UsersController {
       required: ['usrn', 'pass'],
     },
   })
-  async createUser(@Body() createUserDTO: CreateUserDTO) {
-    return this.usersService.createUser(createUserDTO);
+  async createUser(
+    @Body() createUserDTO: CreateUserDTO,
+    @User() user: DecodeUser,
+  ) {
+    return this.usersService.createUser(createUserDTO, user);
   }
 
   @Get()
@@ -74,7 +92,12 @@ export class UsersController {
     return this.usersService.changePassword(changePassDTO);
   }
 
-  @Patch('update-profile')
+  @Patch(':id/update')
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: 'number',
+  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -95,7 +118,17 @@ export class UsersController {
       required: ['user_id'],
     },
   })
-  async updateProfile(@Body() updateProfileDTO: UpdateProfileDTO) {
-    return this.usersService.updateProfile(updateProfileDTO);
+  async updateProfile(
+    @Param('id') user_id: number,
+    @Body() updateProfileDTO: UpdateProfileDTO,
+    @User() user: DecodeUser,
+  ) {
+    return this.usersService.updateProfile(user_id, updateProfileDTO, user);
+  }
+
+  @Roles('HM', 'MA')
+  @Delete(':id')
+  async delete(@Param('id') user_id: number, @User() user: DecodeUser) {
+    return this.usersService.removeUser(user_id, user);
   }
 }
