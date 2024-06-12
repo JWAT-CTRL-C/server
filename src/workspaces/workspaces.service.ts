@@ -130,7 +130,7 @@ export class WorkspacesService {
     await Promise.all([
       this.workspaceRepository.softDelete(wksp_id),
       this.workspaceRepository.update(wksp_id, {
-        delete_user_id: wksp_owner.user_id,
+        deleted_user_id: wksp_owner.user_id,
       }),
     ]);
     return { success: true, message: 'Workspace deleted successfully' };

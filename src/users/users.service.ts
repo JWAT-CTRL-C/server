@@ -80,7 +80,10 @@ export class UsersService {
   async removeUser(user_id: number, user: DecodeUser) {
     await Promise.all([
       this.userRepository.softDelete({ user_id }),
-      this.userRepository.update({ user_id }, { delete_user_id: user.user_id }),
+      this.userRepository.update(
+        { user_id },
+        { deleted_user_id: user.user_id },
+      ),
     ]);
 
     return { success: true, message: 'User deleted successfully' };

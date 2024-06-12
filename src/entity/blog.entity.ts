@@ -31,7 +31,7 @@ export class Blog {
   @DeleteDateColumn()
   deleted_at: Date;
   @Column('integer', { nullable: true })
-  delete_user_id: number;
+  deleted_user_id: number;
   @CreateDateColumn()
   crd_at: Date;
   @Column('integer', { nullable: true })
