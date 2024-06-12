@@ -80,6 +80,7 @@ export class BlogsService {
       workspace: { wksp_id: createBlogDTO.wksp_id },
       blogImage: blog_image,
       tags,
+      crd_user_id: user.user_id,
     });
 
     if (!blog) throw new InternalServerErrorException('Failed to create blog');
@@ -167,7 +168,10 @@ export class BlogsService {
       tags: updatedTags,
     };
 
-    await this.blogRepository.save(updatedBlog);
+    await this.blogRepository.save({
+      ...updatedBlog,
+      upd_user_id: user.user_id,
+    });
 
     return this.findBlogByID(blog_id);
   }
