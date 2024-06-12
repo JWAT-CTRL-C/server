@@ -81,6 +81,7 @@ export class BlogsService {
       blogImage: blog_image,
       tags,
       crd_user_id: user.user_id,
+      resource: { resrc_id: createBlogDTO.resrc_id },
     });
 
     if (!blog) throw new InternalServerErrorException('Failed to create blog');
