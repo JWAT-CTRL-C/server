@@ -14,7 +14,7 @@ import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 import { Roles } from 'src/decorator/roles.decorator';
 import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { AddResourceDTO } from './dto/add-resource.dto';
-import { AddMemberDTO } from './dto/add-memeber.dto';
+import { AddMemberDTO } from './dto/add-member.dto';
 import { RolesGuard } from 'src/guard/roles.guard';
 import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
 import { User } from 'src/decorator/user.decorator';

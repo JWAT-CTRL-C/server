@@ -26,10 +26,16 @@ export class Workspace {
   wksp_desc: string;
   @DeleteDateColumn()
   deleted_at: Date;
+  @Column('integer', { nullable: true })
+  deleted_user_id: number;
   @CreateDateColumn()
   crd_at: Date;
+  @Column('integer', { nullable: true })
+  crd_user_id: number;
   @UpdateDateColumn()
   upd_at: Date;
+  @Column('integer', { nullable: true })
+  upd_user_id: number;
 
   // relations
   // user-owner
