@@ -8,6 +8,7 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -145,5 +146,13 @@ export class BlogsController {
   @Get('for/user')
   async findAllByUserId(@User() user: DecodeUser) {
     return await this.blogsService.findAllByUserId(user);
+  }
+
+  @Get('filter/title')
+  async filterBlogByTitleForCurrentUser(
+    @User() user: DecodeUser,
+    @Query('title') title: string,
+  ) {
+    return await this.blogsService.filterBlogByTitleForCurrentUser(user, title);
   }
 }

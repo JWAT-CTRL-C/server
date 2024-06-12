@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { ILike, In, Like, Repository } from 'typeorm';
 
 import { CreateBlogDTO } from './dto/create-blog.dto';
 import { UpdateBlogDTO } from './dto/update-blog.dto';
@@ -139,10 +139,29 @@ export class BlogsService {
   }
 
   async findAllByUserId(user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
     const blogs = await this.blogRepository.find({
       relations: relationsBlog,
       where: { user: { user_id: user.user_id } },
     });
     return blogs;
+  }
+
+  async filterBlogByTitleForCurrentUser(user: DecodeUser, title: string) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    const foundBlogs = await this.blogRepository.find({
+      where: {
+        user: { user_id: user.user_id },
+        blog_tle: ILike(`%${title}%`),
+      },
+      relations: relationsBlog,
+    });
+    return foundBlogs;
   }
 }
