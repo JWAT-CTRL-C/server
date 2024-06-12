@@ -1,3 +1,5 @@
+import { selectResources } from './resource';
+
 export const selectWorkspace = {
   wksp_id: true,
   wksp_name: true,
@@ -48,6 +50,9 @@ export const selectOneWorkspace = {
   ...selectBasicWorkspace,
   owner: {
     ...selectUserRelation,
+  },
+  resources: {
+    ...selectResources,
   },
 };
 export const workspaceBasicCondition = {

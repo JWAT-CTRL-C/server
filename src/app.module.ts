@@ -15,6 +15,7 @@ import { RedisClientOptions } from 'redis';
 import { redisStore } from 'cache-manager-redis-yet';
 import { NotificationsModule } from './notifications/notifications.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
+import { ResourcesModule } from './resources/resources.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     CloudinaryModule,
     NotificationsModule,
     WorkspacesModule,
+    ResourcesModule,
   ],
   providers: [
     {
