@@ -1,6 +1,7 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   JoinColumn,
   JoinTable,
@@ -17,6 +18,7 @@ import { Tag } from './tag.entity';
 import { BlogImage } from './blog-image.entity';
 import { BlogComment } from './blog-comment.entity';
 import { BlogRating } from './blog-rating.entity';
+import { Resource } from './resource.entity';
 
 @Entity()
 export class Blog {
@@ -64,4 +66,11 @@ export class Blog {
   // BlogRatings
   @OneToMany(() => BlogRating, (blogRatings) => blogRatings.blog)
   blogRatings: BlogRating[];
+
+  // Resource
+  @OneToOne(() => Resource)
+  resource: Resource;
+
+  @DeleteDateColumn()
+  dld_at: Date;
 }
