@@ -121,8 +121,55 @@ export class BlogsService {
     return blog;
   }
 
-  update(blog_id: string, updateBlogDTO: UpdateBlogDTO) {
-    return `This action updates a #${blog_id} blog`;
+  async update(
+    blog_id: string,
+    updateBlogDTO: UpdateBlogDTO,
+    user: DecodeUser,
+  ) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+
+    const updatedTags: Tag[] = foundBlog.tags;
+
+    if (updateBlogDTO.tags && updateBlogDTO.tags.length) {
+      const foundTags = await this.tagRepository.find({
+        where: { tag_name: In(updateBlogDTO.tags) },
+      });
+
+      if (foundTags.length !== updateBlogDTO.tags.length) {
+        const newTags: Tag[] = [];
+        for (const tagName of updateBlogDTO.tags) {
+          if (!foundTags.find((tag) => tag.tag_name === tagName)) {
+            const newTag = this.tagRepository.create({
+              tag_name: tagName,
+            });
+
+            newTags.push(newTag);
+            foundTags.push(newTag);
+          }
+        }
+        await this.tagRepository.save(newTags);
+      }
+
+      updatedTags.push(...foundTags);
+    }
+
+    const updatedBlog = {
+      ...foundBlog,
+      ...updateBlogDTO,
+      tags: updatedTags,
+    };
+    // Cập nhật blog trong cơ sở dữ liệu
+    await this.blogRepository.save(updatedBlog);
+
+    return this.findBlogByID(blog_id);
   }
 
   async remove(blog_id: string) {
@@ -150,7 +197,7 @@ export class BlogsService {
     return blogs;
   }
 
-  async filterBlogByTitleForCurrentUser(user: DecodeUser, title: string) {
+  async filterBlogByTitleForCurrentUser(user: DecodeUser, blog_tle: string) {
     const foundUser = await this.userRepository.findOne({
       where: { user_id: user.user_id },
     });
@@ -158,9 +205,10 @@ export class BlogsService {
     const foundBlogs = await this.blogRepository.find({
       where: {
         user: { user_id: user.user_id },
-        blog_tle: ILike(`%${title}%`),
+        blog_tle: ILike(`%${blog_tle}%`),
       },
       relations: relationsBlog,
+      select: selectBlog,
     });
     return foundBlogs;
   }

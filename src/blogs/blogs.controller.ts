@@ -16,6 +16,7 @@ import {
   ApiBody,
   ApiHeader,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { BlogsService } from './blogs.service';
@@ -99,11 +100,11 @@ export class BlogsController {
     schema: {
       type: 'object',
       properties: {
-        title: {
+        blog_tle: {
           example: 'title',
           type: 'string',
         },
-        content: {
+        blog_cont: {
           example: 'content',
           type: 'string',
         },
@@ -114,8 +115,7 @@ export class BlogsController {
             type: 'string',
           },
         },
-        blog_img_url: {
-          example: 'https://example.com/image.jpg',
+        resrc_id: {
           type: 'string',
         },
       },
@@ -124,8 +124,9 @@ export class BlogsController {
   update(
     @Param('blog_id') blog_id: string,
     @Body() updateBlogDTO: UpdateBlogDTO,
+    @User() user: DecodeUser,
   ) {
-    return this.blogsService.update(blog_id, updateBlogDTO);
+    return this.blogsService.update(blog_id, updateBlogDTO, user);
   }
 
   @Delete(':blog_id')
@@ -149,10 +150,18 @@ export class BlogsController {
   }
 
   @Get('filter/title')
+  @ApiQuery({
+    name: 'blog_tle',
+    type: 'string',
+    required: true,
+  })
   async filterBlogByTitleForCurrentUser(
     @User() user: DecodeUser,
-    @Query('title') title: string,
+    @Query('blog_tle') blog_tle: string,
   ) {
-    return await this.blogsService.filterBlogByTitleForCurrentUser(user, title);
+    return await this.blogsService.filterBlogByTitleForCurrentUser(
+      user,
+      blog_tle,
+    );
   }
 }
