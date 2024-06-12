@@ -136,4 +136,14 @@ export class BlogsController {
   remove(@Param('blog_id') blog_id: string) {
     return this.blogsService.remove(blog_id);
   }
+
+  @Get()
+  async findAll() {
+    return await this.blogsService.findAll();
+  }
+
+  @Get('for/user')
+  async findAllByUserId(@User() user: DecodeUser) {
+    return await this.blogsService.findAllByUserId(user);
+  }
 }

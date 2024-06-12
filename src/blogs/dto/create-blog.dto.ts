@@ -13,6 +13,10 @@ export class CreateBlogDto {
   @IsOptional()
   wksp_id: string;
 
+  @IsString()
+  @IsOptional()
+  resrc_id: string;
+
   @IsArray()
   @IsOptional()
   tags: string[];

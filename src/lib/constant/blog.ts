@@ -7,6 +7,9 @@ export const relationsBlog = {
   blogImage: true,
   blogComments: true,
   blogRatings: true,
+
+  workspace: true,
+  resource: true,
 };
 
 export const selectBlogImage = {

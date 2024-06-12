@@ -7,10 +7,11 @@ import { BlogImage } from 'src/entity/blog-image.entity';
 import { User } from 'src/entity/user.entity';
 import { Tag } from 'src/entity/tag.entity';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
+import { Workspace } from 'src/entity/workspace.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Blog, Tag, BlogImage]),
+    TypeOrmModule.forFeature([User, Blog, Tag, BlogImage, Workspace]),
     CloudinaryModule,
   ],
   controllers: [BlogsController],
