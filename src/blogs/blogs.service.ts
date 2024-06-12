@@ -41,15 +41,6 @@ export class BlogsService {
 
     const tags: Tag[] = [];
 
-    let blog_image: BlogImage = undefined;
-
-    if (createBlogDTO.blog_img_url) {
-      blog_image = this.blogImageRepository.create({
-        blog_img_id: generateUUID('blog_img', user.user_id),
-        blog_img_url: createBlogDTO.blog_img_url,
-      });
-    }
-
     if (createBlogDTO.tags && createBlogDTO.tags.length) {
       const foundTags = await this.tagRepository.find({
         where: { tag_name: In(createBlogDTO.tags) },
@@ -78,7 +69,7 @@ export class BlogsService {
       blog_id: generateUUID('blog', user.user_id),
       user,
       workspace: { wksp_id: createBlogDTO.wksp_id },
-      blogImage: blog_image,
+      // blogImage: blog_image,
       tags,
       crd_user_id: user.user_id,
       resource: { resrc_id: createBlogDTO.resrc_id },
@@ -86,10 +77,21 @@ export class BlogsService {
 
     if (!blog) throw new InternalServerErrorException('Failed to create blog');
 
-    blog_image.blog = blog;
+    // let blog_image: BlogImage = undefined;
+
+    if (createBlogDTO.blog_img_url) {
+      const blog_image = this.blogImageRepository.create({
+        blog_img_id: generateUUID('blog_img', user.user_id),
+        blog_img_url: createBlogDTO.blog_img_url,
+      });
+      const save_blog_image = await this.blogImageRepository.save(blog_image);
+      blog.blogImage = save_blog_image;
+    }
+
+    // blog_image.blog = blog;
 
     await Promise.all([
-      this.blogImageRepository.save(blog_image),
+      // this.blogImageRepository.save(blog_image),
       this.blogRepository.save(blog),
     ]);
 
