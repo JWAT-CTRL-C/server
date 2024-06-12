@@ -136,7 +136,7 @@ export class BlogsService {
       where: { blog_id: blog_id },
     });
 
-    const updatedTags: Tag[] = foundBlog.tags;
+    let updatedTags: Tag[] = foundBlog.tags;
 
     if (updateBlogDTO.tags && updateBlogDTO.tags.length) {
       const foundTags = await this.tagRepository.find({
@@ -158,7 +158,7 @@ export class BlogsService {
         await this.tagRepository.save(newTags);
       }
 
-      updatedTags.push(...foundTags);
+      updatedTags = foundTags;
     }
 
     const updatedBlog = {
@@ -166,7 +166,7 @@ export class BlogsService {
       ...updateBlogDTO,
       tags: updatedTags,
     };
-    // Cập nhật blog trong cơ sở dữ liệu
+
     await this.blogRepository.save(updatedBlog);
 
     return this.findBlogByID(blog_id);
