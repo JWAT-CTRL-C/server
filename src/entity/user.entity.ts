@@ -3,7 +3,6 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  JoinTable,
   ManyToMany,
   OneToMany,
   PrimaryColumn,
@@ -38,19 +37,20 @@ export class User {
   role: string;
   @DeleteDateColumn()
   deleted_at: Date;
+  @Column('integer', { nullable: true })
+  delete_user_id: number;
   @CreateDateColumn()
   crd_at: Date;
+  @Column('integer', { nullable: true })
+  crd_user_id: number;
   @UpdateDateColumn()
   upd_at: Date;
+  @Column('integer', { nullable: true })
+  upd_user_id: number;
 
   // Relations
   // Workspaces
   @ManyToMany(() => Workspace, (workspaces) => workspaces.users)
-  // @JoinTable({
-  //   name: 'user_workspace',
-  //   joinColumn: { name: 'user_id' },
-  //   inverseJoinColumn: { name: 'wksp_id' },
-  // })
   workspaces: Workspace[];
 
   // Workspaces-owner

@@ -28,10 +28,18 @@ export class Blog {
   blog_tle: string;
   @Column('text', { nullable: false })
   blog_cont: string;
+  @DeleteDateColumn()
+  deleted_at: Date;
+  @Column('integer', { nullable: true })
+  delete_user_id: number;
   @CreateDateColumn()
   crd_at: Date;
+  @Column('integer', { nullable: true })
+  crd_user_id: number;
   @UpdateDateColumn()
   upd_at: Date;
+  @Column('integer', { nullable: true })
+  upd_user_id: number;
 
   // Relations
 
