@@ -70,6 +70,7 @@ export class Blog {
   // Resource
   @OneToOne(() => Resource, (resource) => resource.blog)
   resource: Resource;
+
   @DeleteDateColumn()
   dld_at: Date;
 }
