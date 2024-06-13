@@ -1,6 +1,7 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -19,6 +20,14 @@ export class Resource {
   resrc_name: string;
   @Column({ type: 'text' })
   resrc_url: string;
+  @DeleteDateColumn()
+  deleted_at: Date;
+  @Column('integer', { nullable: true })
+  deleted_user_id: number;
+  @Column('integer', { nullable: true })
+  crd_user_id: number;
+  @Column('integer', { nullable: true })
+  upd_user_id: number;
   @CreateDateColumn()
   crd_at: Date;
   @UpdateDateColumn()

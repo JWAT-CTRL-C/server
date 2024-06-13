@@ -1,9 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class AddResourceDTO {
-  @IsNotEmpty()
-  @IsString()
-  wksp_id: string;
+export class CreateResourceDTO {
   @IsNotEmpty()
   @IsString()
   resrc_name: string;
