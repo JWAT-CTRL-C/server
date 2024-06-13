@@ -14,7 +14,6 @@ import { User } from 'src/entity/user.entity';
 import { Resource } from 'src/entity/resource.entity';
 import {
   relationWithOwner,
-  relationWithResources,
   relationWithResourcesNestBlog,
   relationWithUser,
   selectBasicWorkspace,
@@ -106,6 +105,7 @@ export class WorkspacesService {
           ...relationWithUser,
           ...relationWithOwner,
           ...relationWithResources,
+          ...relationWithResourcesNestBlog,
         },
       })
       .then((workspace) => workspace)
