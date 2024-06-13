@@ -182,7 +182,7 @@ export class BlogsService {
   async remove(blog_id: string) {
     await this.blogRepository.softDelete(blog_id);
 
-    return `Delete blog with id #${blog_id} successfully`;
+    return { success: true, message: 'Blog removed successfully' };
   }
 
   async findAll() {
