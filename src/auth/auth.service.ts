@@ -10,6 +10,7 @@ import {
   HttpException,
   Inject,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -63,7 +64,7 @@ export class AuthService {
       where: { usrn: loginUser.usrn },
     });
 
-    if (!foundUser) throw new UnauthorizedException('User not found');
+    if (!foundUser) throw new NotFoundException('User not found');
 
     const isPasswordMatch = await bcrypt.compare(
       loginUser.pass,

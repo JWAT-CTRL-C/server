@@ -1,6 +1,6 @@
 import helmet from 'helmet';
 
-import { ValidationPipe } from '@nestjs/common';
+import { HttpStatus, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -17,7 +17,12 @@ async function bootstrap() {
   });
   app.use(helmet());
   app.setGlobalPrefix('api');
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+    }),
+  );
 
   const configSwagger = new DocumentBuilder()
     .setTitle('Synergy API')
