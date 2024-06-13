@@ -5,6 +5,7 @@ import { saltRounds } from 'src/lib/constant';
 import { Repository } from 'typeorm';
 
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -15,11 +16,14 @@ import { ChangePassDTO } from './dto/change-pass.dto';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
 import { DecodeUser } from 'src/lib/type';
+import { selectUser } from 'src/lib/constant/user';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
   async createUser(createUserDTO: CreateUserDTO, user: DecodeUser) {
@@ -62,6 +66,39 @@ export class UsersService {
     );
 
     return { success: true, message: 'Password changed successfully' };
+  }
+
+  async getProfile(user_id: number) {
+    const user = await this.userRepository.findOne({
+      where: { user_id },
+      select: selectUser,
+    });
+
+    if (!user) throw new UnauthorizedException('User not found');
+
+    return user;
+  }
+
+  async uploadImage(file: Express.Multer.File, user_id: number) {
+    const image = await this.cloudinaryService
+      .uploadImage(file, 'users')
+      .catch((e) => {
+        console.log(e);
+        throw new BadRequestException();
+      });
+
+    await this.userRepository.update(
+      { user_id: user_id },
+      { avatar: image.url },
+    );
+
+    return {
+      success: true,
+      data: {
+        public_id: image.public_id,
+        url: image.url,
+      },
+    };
   }
 
   async updateProfile(

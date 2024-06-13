@@ -7,8 +7,10 @@ import { Repository } from 'typeorm';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   BadRequestException,
+  HttpException,
   Inject,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -62,7 +64,7 @@ export class AuthService {
       where: { usrn: loginUser.usrn },
     });
 
-    if (!foundUser) throw new UnauthorizedException('User not found');
+    if (!foundUser) throw new NotFoundException('User not found');
 
     const isPasswordMatch = await bcrypt.compare(
       loginUser.pass,
@@ -125,9 +127,42 @@ export class AuthService {
         },
       );
 
+      const refresh_token_used = await this.cacheService.get<string[]>(
+        `refresh_token_used::${user_id.toString()}`,
+      );
+
+      if (!refresh_token_used || !refresh_token_used.length) {
+        await this.cacheService.set(
+          `refresh_token_used::${user_id.toString()}`,
+          [refresh_token],
+          7 * 24 * 60 * 60 * 1000,
+        );
+      } else {
+        if (refresh_token_used.includes(refresh_token))
+          throw new UnauthorizedException('Refresh token has been used');
+
+        refresh_token_used.filter((token) => {
+          const decoded: JwtPayload = this.jwtService.decode(token);
+
+          if (decoded.exp < Date.now()) return false;
+
+          return true;
+        });
+
+        refresh_token_used.push(refresh_token);
+
+        await this.cacheService.set(
+          `refresh_token_used::${user_id.toString()}`,
+          refresh_token_used,
+          7 * 24 * 60 * 60 * 1000,
+        );
+      }
+
       const foundUser = await this.userRepository.findOne({
         where: { user_id: decodeUser.user_id },
       });
+
+      if (!foundUser) throw new BadRequestException('User not found');
 
       const payload = {
         user_id: foundUser.user_id,
@@ -148,7 +183,7 @@ export class AuthService {
 
       return tokens;
     } catch (error) {
-      throw error;
+      throw new HttpException(error.message, error.status ?? 419);
     }
   }
 
@@ -167,7 +202,10 @@ export class AuthService {
         },
       );
 
-      await this.cacheService.del(`user::${decodeUser.user_id.toString()}`);
+      await Promise.all([
+        this.cacheService.del(`refresh_token_used::${user_id.toString()}`),
+        this.cacheService.del(`user::${decodeUser.user_id.toString()}`),
+      ]);
 
       return { success: true, message: 'Logout successfully' };
     } catch (error) {
