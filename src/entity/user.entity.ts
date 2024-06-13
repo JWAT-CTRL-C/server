@@ -20,6 +20,8 @@ export class User {
   user_id: number;
   @Column('varchar', { length: 50, nullable: false })
   usrn: string;
+  @Column('text', { nullable: true })
+  avatar: string;
   @Column('varchar', { length: 125, nullable: true })
   email: string;
   @Column('varchar', { length: 30, nullable: true })

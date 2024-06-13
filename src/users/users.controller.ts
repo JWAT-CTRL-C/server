@@ -11,7 +11,9 @@ import {
   Param,
   Patch,
   Post,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -25,6 +27,7 @@ import { ChangePassDTO } from './dto/change-pass.dto';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
 import { UsersService } from './users.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiBearerAuth()
 @ApiHeader({
@@ -67,6 +70,42 @@ export class UsersController {
     return user;
   }
 
+  @Get('me')
+  async getMe(@User() user: DecodeUser) {
+    return this.usersService.getProfile(user.user_id);
+  }
+
+  @Get(':id')
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: 'number',
+  })
+  async findOne(@Param('id') user_id: number) {
+    return this.usersService.getProfile(user_id);
+  }
+
+  @Post('upload-image')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  uploadImage(
+    @UploadedFile() file: Express.Multer.File,
+    @User() user: DecodeUser,
+  ) {
+    return this.usersService.uploadImage(file, user.user_id);
+  }
+
   @Post('change-password')
   @ApiBody({
     schema: {
@@ -92,7 +131,7 @@ export class UsersController {
     return this.usersService.changePassword(changePassDTO);
   }
 
-  @Patch(':id/update')
+  @Patch(':id')
   @ApiParam({
     name: 'id',
     required: true,
