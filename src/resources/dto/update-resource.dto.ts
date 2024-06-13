@@ -1,11 +1,10 @@
-import { Optional } from '@nestjs/common';
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateResourceDTO {
-  @Optional()
+  @IsOptional()
   @IsString()
   resrc_name: string;
-  @Optional()
+  @IsOptional()
   @IsString()
   resrc_url: string;
 }

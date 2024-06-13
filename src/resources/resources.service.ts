@@ -28,10 +28,9 @@ export class ResourcesService {
 
   // get all resources belong to workspace
   async getWorkspaceResources(wksp_id: string) {
-    return await this.workspaceRepository.find({
-      select: selectWorkspaceResources,
-      where: { wksp_id },
-      relations: relationWithResources,
+    return await this.resourceRepository.find({
+      select: selectResources,
+      where: { workspace: { wksp_id } },
     });
   }
   // get one resource belong to workspace
