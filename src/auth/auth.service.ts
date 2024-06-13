@@ -38,6 +38,7 @@ export class AuthService {
         privateKey,
         algorithm: 'RS256',
         expiresIn: '10 minutes',
+        // expiresIn: '7 days',
       }),
       this.jwtService.signAsync(payload, {
         privateKey,

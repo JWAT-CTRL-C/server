@@ -25,6 +25,7 @@ import { AddMemberDTO } from './dto/add-member.dto';
 import { RemoveMemberDTO } from './dto/remove-member.dto';
 import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
 import { DecodeUser } from 'src/lib/type';
+import { relationWithResources } from 'src/lib/constant/resource';
 
 @Injectable()
 export class WorkspacesService {
@@ -101,10 +102,15 @@ export class WorkspacesService {
       .findOne({
         select: selectOneWorkspace,
         where: { wksp_id },
-        relations: { ...relationWithUser, ...relationWithOwner },
+        relations: {
+          ...relationWithUser,
+          ...relationWithOwner,
+          ...relationWithResources,
+        },
       })
       .then((workspace) => workspace)
-      .catch(() => {
+      .catch((err) => {
+        console.log(err);
         return new NotFoundException('Workspace not found');
       });
   }
