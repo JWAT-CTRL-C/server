@@ -179,6 +179,14 @@ export class BlogsService {
       where: { blog_id: blog_id },
     });
 
+    if (updateBlogDTO.resrc_id) {
+      const foundResource = await this.resourceRepository.findOne({
+        where: { resrc_id: updateBlogDTO.resrc_id },
+      });
+      // check resource have exist
+      if (!foundResource) throw new NotFoundException('Resource not found');
+    }
+
     // check blog exist
 
     if (!foundBlog) throw new NotFoundException('Blog not found');
