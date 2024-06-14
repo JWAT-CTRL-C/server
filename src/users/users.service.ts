@@ -106,6 +106,20 @@ export class UsersService {
     updateProfileDTO: UpdateProfileDTO,
     user: DecodeUser,
   ) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+
+    if (!foundUser) throw new UnauthorizedException('User not found');
+
+    if (
+      foundUser.user_id !== user_id ||
+      (foundUser.role !== 'HM' && foundUser.role !== 'MA')
+    )
+      throw new UnauthorizedException(
+        'You are not allowed to update this user',
+      );
+
     await this.userRepository.update(
       { user_id: user_id },
       { ...updateProfileDTO, upd_user_id: user.user_id },
