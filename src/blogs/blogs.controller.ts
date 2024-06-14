@@ -8,7 +8,6 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
-  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -16,7 +15,6 @@ import {
   ApiBody,
   ApiHeader,
   ApiParam,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { BlogsService } from './blogs.service';
@@ -100,11 +98,11 @@ export class BlogsController {
     schema: {
       type: 'object',
       properties: {
-        blog_tle: {
+        title: {
           example: 'title',
           type: 'string',
         },
-        blog_cont: {
+        content: {
           example: 'content',
           type: 'string',
         },
@@ -115,7 +113,8 @@ export class BlogsController {
             type: 'string',
           },
         },
-        resrc_id: {
+        blog_img_url: {
+          example: 'https://example.com/image.jpg',
           type: 'string',
         },
       },
@@ -124,9 +123,8 @@ export class BlogsController {
   update(
     @Param('blog_id') blog_id: string,
     @Body() updateBlogDTO: UpdateBlogDTO,
-    @User() user: DecodeUser,
   ) {
-    return this.blogsService.update(blog_id, updateBlogDTO, user);
+    return this.blogsService.update(blog_id, updateBlogDTO);
   }
 
   @Delete(':blog_id')
@@ -147,21 +145,5 @@ export class BlogsController {
   @Get('for/user')
   async findAllByUserId(@User() user: DecodeUser) {
     return await this.blogsService.findAllByUserId(user);
-  }
-
-  @Get('filter/title')
-  @ApiQuery({
-    name: 'blog_tle',
-    type: 'string',
-    required: true,
-  })
-  async filterBlogByTitleForCurrentUser(
-    @User() user: DecodeUser,
-    @Query('blog_tle') blog_tle: string,
-  ) {
-    return await this.blogsService.filterBlogByTitleForCurrentUser(
-      user,
-      blog_tle,
-    );
   }
 }

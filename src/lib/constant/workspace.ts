@@ -80,8 +80,3 @@ export const relationWithWorkspace = {
 export const defaultCondition = {
   deleted_at: null,
 };
-export const relationWithResourcesNestBlog = {
-  resources: {
-    blog: true,
-  },
-};

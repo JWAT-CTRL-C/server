@@ -45,7 +45,3 @@ export const selectBlog = {
   user: selectUser,
   tags: selectTag,
 };
-
-export const blogRelationWithUser = {
-  user: true,
-};
