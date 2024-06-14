@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -30,9 +31,11 @@ export class UserWorkspace {
   // Relations
   // Workspaces
   @ManyToOne(() => Workspace, (workspaces) => workspaces.users)
+  @JoinColumn({ name: 'wksp_id' })
   workspace: Workspace;
 
   // Users
   @ManyToOne(() => User, (user) => user.workspaces)
+  @JoinColumn({ name: 'user_id' })
   user: User;
 }
