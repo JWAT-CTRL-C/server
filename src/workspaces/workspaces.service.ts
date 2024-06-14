@@ -14,6 +14,7 @@ import { User } from 'src/entity/user.entity';
 import { Resource } from 'src/entity/resource.entity';
 import {
   relationWithOwner,
+  relationWithResourcesNestBlog,
   relationWithUser,
   selectBasicWorkspace,
   selectOneWorkspace,
@@ -104,6 +105,7 @@ export class WorkspacesService {
           ...relationWithUser,
           ...relationWithOwner,
           ...relationWithResources,
+          ...relationWithResourcesNestBlog,
         },
       })
       .then((workspace) => workspace)
@@ -116,7 +118,7 @@ export class WorkspacesService {
     try {
       const workspace = await this.workspaceRepository.find({
         select: selectBasicWorkspace,
-        relations: relationWithUser,
+        relations: { ...relationWithUser, ...relationWithResourcesNestBlog },
         where: {
           users: { user_id: user.user_id },
         },
