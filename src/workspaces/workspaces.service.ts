@@ -8,7 +8,7 @@ import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Workspace } from 'src/entity/workspace.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { generateUUID } from 'src/lib/utils';
 import { User } from 'src/entity/user.entity';
 import { Resource } from 'src/entity/resource.entity';
@@ -18,6 +18,7 @@ import {
   relationWithUser,
   selectBasicWorkspace,
   selectOneWorkspace,
+  selectWorkspaceMembers,
   workspaceBasicCondition,
 } from 'src/lib/constant/workspace';
 import { AddMemberDTO } from './dto/add-member.dto';
@@ -25,6 +26,7 @@ import { RemoveMemberDTO } from './dto/remove-member.dto';
 import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
 import { DecodeUser } from 'src/lib/type';
 import { relationWithResources } from 'src/lib/constant/resource';
+import { selectUser } from 'src/lib/constant/user';
 
 @Injectable()
 export class WorkspacesService {
@@ -68,6 +70,7 @@ export class WorkspacesService {
     updateWorkspaceDTO: UpdateWorkspaceDTO,
     wksp_owner: DecodeUser,
   ) {
+    console.log(updateWorkspaceDTO);
     try {
       const wksp = await this.workspaceRepository.findOne({
         where: { wksp_id },
@@ -119,11 +122,11 @@ export class WorkspacesService {
       const workspace = await this.workspaceRepository.find({
         select: selectBasicWorkspace,
         relations: { ...relationWithUser, ...relationWithResourcesNestBlog },
-        where: {
-          users: { user_id: user.user_id },
-        },
       });
-      return workspace;
+      const result = workspace.filter((wksp) =>
+        wksp.users.find((u) => u.user_id === user.user_id),
+      );
+      return result;
     } catch (err) {
       return new ForbiddenException('Get workspace failed');
     }
@@ -142,6 +145,13 @@ export class WorkspacesService {
       }),
     ]);
     return { success: true, message: 'Workspace deleted successfully' };
+  }
+  async getMember(wksp_id: string) {
+    return await this.workspaceRepository.find({
+      select: selectWorkspaceMembers,
+      where: { wksp_id },
+      relations: { ...relationWithOwner, ...relationWithUser },
+    });
   }
   async addMember(
     wksp_id: string,
@@ -162,7 +172,6 @@ export class WorkspacesService {
     if (wksp.users.find((u) => u.user_id === member.user_id))
       throw new ConflictException('User already in workspace');
     wksp.users.push(user);
-    user.workspaces.push(wksp);
     await Promise.all([
       this.userRepository.save(user),
       this.workspaceRepository.save(wksp),
@@ -172,38 +181,33 @@ export class WorkspacesService {
   }
   async removeMember(
     wksp_id: string,
-    member: RemoveMemberDTO,
+    member_id: number,
     wksp_owner: DecodeUser,
   ) {
-    try {
-      const wksp = await this.workspaceRepository.findOne({
-        where: { wksp_id: wksp_id, owner: { user_id: member.user_id } },
-        relations: { ...relationWithUser, ...relationWithOwner },
-      });
-      if (!wksp) throw new NotFoundException('Workspace not found');
-      if (wksp.owner.user_id === member.user_id)
-        throw new ForbiddenException('Cannot remove owner');
-      if (wksp.owner.user_id !== wksp_owner.user_id)
-        throw new ForbiddenException('Only owner can remove member');
-      const user = await this.userRepository.findOne({
-        where: { user_id: member.user_id },
-        relations: { workspaces: true },
-      });
-      if (!user) throw new NotFoundException('User not found');
+    const wksp = await this.workspaceRepository.findOne({
+      where: { wksp_id: wksp_id, owner: { user_id: wksp_owner.user_id } },
+      relations: { ...relationWithUser, ...relationWithOwner },
+    });
+    if (!wksp) throw new NotFoundException('Workspace not found');
+    if (wksp.owner.user_id === member_id)
+      throw new ForbiddenException('Cannot remove owner');
+    if (wksp.owner.user_id !== wksp_owner.user_id)
+      throw new ForbiddenException('Only owner can remove member');
+    const user = await this.userRepository.findOne({
+      where: { user_id: member_id },
+      relations: { workspaces: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
 
-      wksp.users = wksp.users.filter((user) => user.user_id !== member.user_id);
-      user.workspaces = user.workspaces.filter(
-        (workspace) => workspace.wksp_id !== wksp.wksp_id,
-      );
-      await Promise.all([
-        this.workspaceRepository.save(wksp),
-        this.userRepository.save(user),
-      ]);
-      return { success: true, message: 'Member removed successfully' };
-    } catch (err) {
-      console.log(err);
-      throw new ForbiddenException('Remove member failed');
-    }
+    wksp.users = wksp.users.filter((user) => user.user_id !== member_id);
+    user.workspaces = user.workspaces.filter(
+      (workspace) => workspace.wksp_id !== wksp.wksp_id,
+    );
+    await Promise.all([
+      this.workspaceRepository.save(wksp),
+      this.userRepository.save(user),
+    ]);
+    return { success: true, message: 'Member removed successfully' };
   }
   async franchiseWorkspace(
     wksp_id: string,

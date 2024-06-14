@@ -65,9 +65,10 @@ export class UsersController {
     return this.usersService.createUser(createUserDTO, user);
   }
 
-  @Get()
-  async findAll(@User() user: DecodeUser) {
-    return user;
+  @Get('all')
+  @Roles('HM', 'MA', 'PM')
+  async findAll() {
+    return this.usersService.getAllUsers();
   }
 
   @Get('me')

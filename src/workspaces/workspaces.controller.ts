@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
@@ -18,6 +19,7 @@ import { RolesGuard } from 'src/guard/roles.guard';
 import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
 import { User } from 'src/decorator/user.decorator';
 import { DecodeUser } from 'src/lib/type';
+import { RemoveMemberDTO } from './dto/remove-member.dto';
 @UseGuards(RolesGuard)
 @ApiTags('workspaces')
 @Controller('workspaces')
@@ -68,6 +70,12 @@ export class WorkspacesController {
     return this.workspacesService.removeWorkspace(wksp_id, owner);
   }
 
+  // Get member
+  @Get(':wksp_id/member')
+  @Roles('MA', 'HM', 'PM')
+  getMember(@Param('wksp_id') wksp_id: string) {
+    return this.workspacesService.getMember(wksp_id);
+  }
   // Add member
   @Post(':wksp_id/member')
   @Roles('MA', 'HM', 'PM')
@@ -80,11 +88,11 @@ export class WorkspacesController {
   }
 
   // Remove member
-  @Delete(':wksp_id/member')
+  @Delete(':wksp_id/member/:mem_id')
   @Roles('MA', 'HM', 'PM')
   removeMember(
     @Param('wksp_id') wksp_id: string,
-    @Body() member: AddMemberDTO,
+    @Param('mem_id', ParseIntPipe) member: number,
     @User() owner: DecodeUser,
   ) {
     return this.workspacesService.removeMember(wksp_id, member, owner);
