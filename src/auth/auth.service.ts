@@ -183,7 +183,7 @@ export class AuthService {
 
       return tokens;
     } catch (error) {
-      throw new HttpException(error.message, error.status ?? 419);
+      throw new HttpException(error.message, error.status ?? 401);
     }
   }
 
