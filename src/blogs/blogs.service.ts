@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,9 +16,15 @@ import { Blog } from 'src/entity/blog.entity';
 import { BlogImage } from 'src/entity/blog-image.entity';
 import { Tag } from 'src/entity/tag.entity';
 import { generateUUID } from 'src/lib/utils';
-import { relationsBlog, selectBlog } from 'src/lib/constant/blog';
+import {
+  blogRelationWithUser,
+  relationsBlog,
+  selectBlog,
+} from 'src/lib/constant/blog';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Workspace } from 'src/entity/workspace.entity';
+import { relationWithUser } from 'src/lib/constant/workspace';
+import { Resource } from 'src/entity/resource.entity';
 
 @Injectable()
 export class BlogsService {
@@ -30,6 +37,8 @@ export class BlogsService {
     private readonly cloudinaryService: CloudinaryService,
     @InjectRepository(Workspace)
     private readonly workspaceRepository: Repository<Workspace>,
+    @InjectRepository(Resource)
+    private readonly resourceRepository: Repository<Resource>,
   ) {}
 
   async createBlog(createBlogDTO: CreateBlogDTO, user: DecodeUser) {
@@ -38,6 +47,27 @@ export class BlogsService {
     });
 
     if (!foundUser) throw new NotFoundException('User not found');
+
+    if (createBlogDTO.wksp_id) {
+      const foundWorkspace = await this.workspaceRepository.findOne({
+        where: { wksp_id: createBlogDTO.wksp_id },
+        relations: { ...relationWithUser },
+      });
+      // check workspace have exist
+      if (!foundWorkspace) throw new NotFoundException('Workspace not found');
+      // check workspace belong to user
+
+      if (!foundWorkspace.users.find((user) => user.user_id === user.user_id))
+        throw new NotAcceptableException('User not belong to the workspace');
+    }
+
+    if (createBlogDTO.resrc_id) {
+      const foundResource = await this.resourceRepository.findOne({
+        where: { resrc_id: createBlogDTO.resrc_id },
+      });
+      // check resource have exist
+      if (!foundResource) throw new NotFoundException('Resource not found');
+    }
 
     const tags: Tag[] = [];
 
@@ -134,11 +164,24 @@ export class BlogsService {
       where: { user_id: user.user_id },
     });
 
+    const checOwnerBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id, user: { user_id: user.user_id } },
+      relations: { ...blogRelationWithUser },
+    });
+    // check blog belong to user
+    if (!checOwnerBlog)
+      throw new NotAcceptableException('Blog not belong to user');
+
+    //check user exist
     if (!foundUser) throw new NotFoundException('User not found');
 
     const foundBlog = await this.blogRepository.findOne({
       where: { blog_id: blog_id },
     });
+
+    // check blog exist
+
+    if (!foundBlog) throw new NotFoundException('Blog not found');
 
     let updatedTags: Tag[] = foundBlog.tags;
 
