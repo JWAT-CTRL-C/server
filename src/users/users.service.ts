@@ -7,7 +7,9 @@ import { Repository } from 'typeorm';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -52,7 +54,7 @@ export class UsersService {
       where: { user_id: changePassDTO.user_id },
     });
 
-    if (!foundUser) throw new UnauthorizedException('User not found');
+    if (!foundUser) throw new NotFoundException('User not found');
 
     const isMatch = await bcrypt.compare(changePassDTO.oldPass, foundUser.pass);
 
@@ -74,7 +76,7 @@ export class UsersService {
       select: selectUser,
     });
 
-    if (!user) throw new UnauthorizedException('User not found');
+    if (!user) throw new NotFoundException('User not found');
 
     return user;
   }
@@ -110,15 +112,13 @@ export class UsersService {
       where: { user_id: user.user_id },
     });
 
-    if (!foundUser) throw new UnauthorizedException('User not found');
+    if (!foundUser) throw new NotFoundException('User not found');
 
     if (
       foundUser.user_id !== user_id ||
       (foundUser.role !== 'HM' && foundUser.role !== 'MA')
     )
-      throw new UnauthorizedException(
-        'You are not allowed to update this user',
-      );
+      throw new ForbiddenException('You are not allowed to update this user');
 
     await this.userRepository.update(
       { user_id: user_id },
