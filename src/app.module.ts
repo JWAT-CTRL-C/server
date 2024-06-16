@@ -41,6 +41,7 @@ import { ResourcesModule } from './resources/resources.module';
         password: configService.get<string>('PGPASSWORD'),
         database: configService.get<string>('PGDATABASE'),
         autoLoadEntities: true,
+        schema: configService.get<string>('PGSCHEMA'),
         entities: [__dirname + '/entity/*.entity{.ts,.js}'],
         migrations: [__dirname + '/db/migrations/*{.ts,.js}'],
         // synchronize: true,

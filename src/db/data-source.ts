@@ -9,6 +9,7 @@ export default new DataSource({
   username: process.env.PGUSER,
   password: process.env.PGPASSWORD,
   database: process.env.PGDATABASE,
+  schema: process.env.PGSCHEMA,
   synchronize: false,
   dropSchema: false,
   logging: false,

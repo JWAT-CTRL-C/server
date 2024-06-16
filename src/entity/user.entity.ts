@@ -3,7 +3,6 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  ManyToMany,
   OneToMany,
   PrimaryColumn,
   UpdateDateColumn,
@@ -13,6 +12,7 @@ import { Blog } from './blog.entity';
 import { Notification } from './notification.entity';
 import { BlogRating } from './blog-rating.entity';
 import { BlogComment } from './blog-comment.entity';
+import { UserWorkspace } from './user_workspace.entity';
 
 @Entity()
 export class User {
@@ -52,7 +52,7 @@ export class User {
 
   // Relations
   // Workspaces
-  @ManyToMany(() => Workspace, (workspaces) => workspaces.users)
+  @OneToMany(() => UserWorkspace, (user_workspace) => user_workspace.user)
   workspaces: Workspace[];
 
   // Workspaces-owner
