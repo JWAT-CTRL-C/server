@@ -35,12 +35,9 @@ export const selectBasicWorkspace = {
   wksp_name: true,
   wksp_desc: true,
   users: {
-    user_id: true,
     usrn: true,
     role: true,
-    fuln: true,
-    email: true,
-    avatar: true,
+    user_id: true,
   },
 };
 export const selectWorkspaceMembers = {
@@ -52,6 +49,9 @@ export const selectUserRelation = {
   user_id: true,
   usrn: true,
   role: true,
+  email: true,
+  avatar: true,
+  fuln: true,
 };
 export const selectOneWorkspace = {
   ...selectBasicWorkspace,
