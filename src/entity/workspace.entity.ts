@@ -4,8 +4,6 @@ import {
   DeleteDateColumn,
   Entity,
   JoinColumn,
-  JoinTable,
-  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryColumn,
@@ -15,6 +13,7 @@ import { User } from './user.entity';
 import { Blog } from './blog.entity';
 import { Resource } from './resource.entity';
 import { Notification } from './notification.entity';
+import { UserWorkspace } from './user_workspace.entity';
 
 @Entity()
 export class Workspace {
@@ -44,12 +43,7 @@ export class Workspace {
   owner: User;
 
   // Users
-  @ManyToMany(() => User, (user) => user.workspaces)
-  @JoinTable({
-    name: 'user_workspace',
-    joinColumn: { name: 'wksp_id' },
-    inverseJoinColumn: { name: 'user_id' },
-  })
+  @OneToMany(() => UserWorkspace, (user_workspace) => user_workspace.workspace)
   users: User[];
 
   // Blogs

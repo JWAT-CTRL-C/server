@@ -12,14 +12,19 @@ import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 import { Roles } from 'src/decorator/roles.decorator';
-import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { AddMemberDTO } from './dto/add-member.dto';
 import { RolesGuard } from 'src/guard/roles.guard';
 import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
 import { User } from 'src/decorator/user.decorator';
 import { DecodeUser } from 'src/lib/type';
 @UseGuards(RolesGuard)
+@ApiBearerAuth()
 @ApiTags('workspaces')
+@ApiHeader({
+  name: 'x-user-id',
+  required: true,
+})
 @Controller('workspaces')
 export class WorkspacesController {
   constructor(private readonly workspacesService: WorkspacesService) {}
