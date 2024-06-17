@@ -56,17 +56,7 @@ export class BlogsService {
 
       // check workspace have exist
       if (!foundWorkspace) throw new NotFoundException('Workspace not found');
-      // check workspace belong to user
-
-      // Convert to the same type
-      // Debugging: log user ids and workspace users for comparison
-      console.log('User ID:', user.user_id);
-      console.log('Workspace Owner ID:', foundWorkspace.owner.user_id);
-      console.log(
-        'Workspace Users:',
-        foundWorkspace.users.map((u) => u.user_workspace_id),
-      );
-
+     
       const userId = user.user_id.toString();
 
       // check workspace belong to user
