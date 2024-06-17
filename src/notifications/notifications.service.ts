@@ -86,7 +86,7 @@ export class NotificationsService {
     const skip = page * this.take || 0;
 
     const workspaces = await this.workspaceRepository.find({
-      where: { users: { user_id: user_id } },
+      where: { users: { user: { user_id: user_id } } },
     });
 
     const notifications = await this.notificationRepository.find({
@@ -118,7 +118,7 @@ export class NotificationsService {
     const skip = page * this.take || 0;
 
     const workspace = await this.workspaceRepository.findOne({
-      where: { wksp_id, users: { user_id } },
+      where: { wksp_id, users: { user: { user_id } } },
     });
 
     if (!workspace) {

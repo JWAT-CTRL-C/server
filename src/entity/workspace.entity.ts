@@ -44,7 +44,7 @@ export class Workspace {
 
   // Users
   @OneToMany(() => UserWorkspace, (user_workspace) => user_workspace.workspace)
-  users: User[];
+  users: UserWorkspace[];
 
   // Blogs
   @OneToMany(() => Blog, (blogs) => blogs.workspace)

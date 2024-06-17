@@ -1,4 +1,5 @@
 import { selectResources } from './resource';
+import { selectUser } from './user';
 
 export const selectWorkspace = {
   wksp_id: true,
@@ -34,17 +35,23 @@ export const selectBasicWorkspace = {
   wksp_name: true,
   wksp_desc: true,
   users: {
-    user_id: true,
     usrn: true,
     role: true,
-    fuln: true,
-    email: true,
+    user_id: true,
   },
+};
+export const selectWorkspaceMembers = {
+  ...selectShortWorkspace,
+  owner: selectUser,
+  users: selectUser,
 };
 export const selectUserRelation = {
   user_id: true,
   usrn: true,
   role: true,
+  email: true,
+  avatar: true,
+  fuln: true,
 };
 export const selectOneWorkspace = {
   ...selectBasicWorkspace,

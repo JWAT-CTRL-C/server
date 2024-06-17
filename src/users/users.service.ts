@@ -140,4 +140,11 @@ export class UsersService {
 
     return { success: true, message: 'User deleted successfully' };
   }
+  async getAllUsers() {
+    const users = await this.userRepository.find({
+      select: selectUser,
+    });
+
+    return users;
+  }
 }

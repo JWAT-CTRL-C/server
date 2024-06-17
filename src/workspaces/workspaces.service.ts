@@ -11,20 +11,18 @@ import { Workspace } from 'src/entity/workspace.entity';
 import { Repository } from 'typeorm';
 import { generateUUID } from 'src/lib/utils';
 import { User } from 'src/entity/user.entity';
-import { Resource } from 'src/entity/resource.entity';
 import {
-  relationWithOwner,
   relationWithResourcesNestBlog,
-  relationWithUser,
-  selectBasicWorkspace,
-  selectOneWorkspace,
-  workspaceBasicCondition,
+  selectUserRelation,
 } from 'src/lib/constant/workspace';
 import { AddMemberDTO } from './dto/add-member.dto';
-import { RemoveMemberDTO } from './dto/remove-member.dto';
 import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
 import { DecodeUser } from 'src/lib/type';
-import { relationWithResources } from 'src/lib/constant/resource';
+import {
+  relationWithResources,
+  selectResources,
+} from 'src/lib/constant/resource';
+import { UserWorkspace } from 'src/entity/user_workspace.entity';
 
 @Injectable()
 export class WorkspacesService {
@@ -32,6 +30,8 @@ export class WorkspacesService {
     @InjectRepository(Workspace)
     private workspaceRepository: Repository<Workspace>,
     @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(UserWorkspace)
+    private userWorkspaceRepository: Repository<UserWorkspace>,
   ) {}
 
   async create(createWorkspaceDTO: CreateWorkspaceDTO, wksp_owner: DecodeUser) {
@@ -42,17 +42,24 @@ export class WorkspacesService {
         relations: { workspacesOwner: true, workspaces: true }, //todo change to constant
       });
       if (!owner) throw new NotFoundException('Owner not found');
-      const workspace = this.workspaceRepository.create({
+      const user_workspace = await this.userWorkspaceRepository.create({
+        user: owner,
+      });
+      const workspace = await this.workspaceRepository.create({
         wksp_id: wksp_id,
         wksp_name: createWorkspaceDTO.wksp_name,
         wksp_desc: createWorkspaceDTO.wksp_desc,
-        users: [owner],
         owner: owner,
+        users: [user_workspace],
         crd_user_id: owner.user_id,
       });
+
+      user_workspace.workspace = workspace;
       owner.workspacesOwner.push(workspace);
-      owner.workspaces.push(workspace);
+      owner.workspaces.push(user_workspace);
+
       await Promise.all([
+        this.userWorkspaceRepository.save(user_workspace),
         this.workspaceRepository.save(workspace),
         this.userRepository.save(owner),
       ]);
@@ -68,181 +75,306 @@ export class WorkspacesService {
     updateWorkspaceDTO: UpdateWorkspaceDTO,
     wksp_owner: DecodeUser,
   ) {
-    try {
-      const wksp = await this.workspaceRepository.findOne({
-        where: { wksp_id },
-        relations: { ...relationWithUser, ...relationWithOwner },
-      });
-      if (wksp.owner.user_id !== wksp_owner.user_id)
-        throw new ForbiddenException('Only owner can update workspace');
-      await this.workspaceRepository.update(wksp_id, {
+    const wksp = await this.workspaceRepository.findOne({
+      where: { wksp_id, owner: { user_id: wksp_owner.user_id } },
+      relations: { owner: true },
+    });
+    if (!wksp) throw new ForbiddenException('Update workspace failed');
+    return await this.workspaceRepository
+      .update(wksp_id, {
         ...updateWorkspaceDTO,
         upd_user_id: wksp_owner.user_id,
+      })
+      .then(() => {
+        return { success: true, message: 'Workspace updated successfully' };
+      })
+      .catch((err) => {
+        return new ForbiddenException('Update workspace failed');
       });
-
-      return { success: true, message: 'Workspace updated successfully' };
-    } catch (err) {
-      return new ForbiddenException('Update workspace failed');
-    }
   }
+
   async getAllWorkspaces() {
     try {
       const workspace = await this.workspaceRepository.find({
-        select: selectBasicWorkspace,
-        relations: relationWithUser,
+        select: {
+          wksp_id: true,
+          wksp_name: true,
+          wksp_desc: true,
+          users: true,
+          owner: selectUserRelation,
+        },
+        relations: {
+          owner: true,
+          users: {
+            user: true,
+          },
+        },
       });
-      return workspace;
+      const new_wksp = workspace.map((wksp) => {
+        if (wksp.users.length === 0) {
+          return wksp;
+        } else {
+          return {
+            ...wksp,
+            users: wksp.users.map(({ user }) => ({
+              user_id: user.user_id,
+              usrn: user.usrn,
+              avatar: user.avatar,
+              email: user.email,
+              fuln: user.fuln,
+              phone: user.phone,
+              role: user.role,
+            })),
+          };
+        }
+      });
+      return new_wksp;
     } catch (err) {
       return new ForbiddenException('Get workspace failed');
     }
   }
   async getOneWorkspace(wksp_id: string) {
-    return await this.workspaceRepository
-      .findOne({
-        select: selectOneWorkspace,
-        where: { wksp_id },
-        relations: {
-          ...relationWithUser,
-          ...relationWithOwner,
-          ...relationWithResources,
-          ...relationWithResourcesNestBlog,
+    const result = await this.workspaceRepository.findOne({
+      select: {
+        wksp_id: true,
+        wksp_name: true,
+        wksp_desc: true,
+        owner: selectUserRelation,
+        users: true,
+        resources: true,
+      },
+      where: { wksp_id },
+      relations: {
+        owner: true,
+        users: {
+          user: true,
         },
-      })
-      .then((workspace) => workspace)
-      .catch((err) => {
-        console.log(err);
-        return new NotFoundException('Workspace not found');
-      });
+        resources: {
+          blog: true,
+        },
+      },
+    });
+    if (!result) throw new NotFoundException('Workspace not found');
+
+    const workspace = {
+      ...result,
+      users: result.users.map(({ user }) => ({
+        user_id: user.user_id,
+        usrn: user.usrn,
+        avatar: user.avatar,
+        email: user.email,
+        fuln: user.fuln,
+        phone: user.phone,
+        role: user.role,
+      })),
+    };
+    return workspace;
+    // .then((workspace) => workspace)
+    // .catch((err) => {
+    //   console.log(err);
+    //   return new NotFoundException('Workspace not found');
+    // });
   }
   async getUsersWorkspaces(user: DecodeUser) {
     try {
       const workspace = await this.workspaceRepository.find({
-        select: selectBasicWorkspace,
-        relations: { ...relationWithUser, ...relationWithResourcesNestBlog },
-        where: {
-          users: { user_id: user.user_id },
+        select: {
+          wksp_id: true,
+          wksp_name: true,
+          wksp_desc: true,
+          users: true,
+          owner: selectUserRelation,
+          resources: true,
+        },
+        relations: {
+          users: { user: true },
+          resources: {
+            blog: true,
+          },
+          owner: true,
         },
       });
-      return workspace;
+      const new_wksp = workspace.map((wksp) => {
+        if (wksp.users.length === 0) {
+          return wksp;
+        } else {
+          return {
+            ...wksp,
+            users: wksp.users.map(({ user }) => ({
+              user_id: user.user_id,
+              usrn: user.usrn,
+              avatar: user.avatar,
+              email: user.email,
+              fuln: user.fuln,
+              phone: user.phone,
+              role: user.role,
+            })),
+          };
+        }
+      });
+      return new_wksp;
     } catch (err) {
+      console.log(err);
       return new ForbiddenException('Get workspace failed');
     }
   }
   async removeWorkspace(wksp_id: string, wksp_owner: DecodeUser) {
-    const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id },
-      relations: { ...relationWithUser, ...relationWithOwner },
-    });
-    if (wksp.owner.user_id !== wksp_owner.user_id)
-      throw new ForbiddenException('Only owner can delete workspace');
-    await Promise.all([
+    return await Promise.all([
       this.workspaceRepository.softDelete(wksp_id),
       this.workspaceRepository.update(wksp_id, {
         deleted_user_id: wksp_owner.user_id,
       }),
-    ]);
-    return { success: true, message: 'Workspace deleted successfully' };
+    ])
+      .then(() => {
+        return { success: true, message: 'Workspace deleted successfully' };
+      })
+      .catch((err) => {
+        return new ForbiddenException('Delete workspace failed');
+      });
+  }
+  async getMember(wksp_id: string) {
+    const result = await this.workspaceRepository.findOne({
+      select: {
+        wksp_id: true,
+        wksp_name: true,
+        wksp_desc: true,
+        owner: selectUserRelation,
+        users: true,
+      },
+      where: { wksp_id },
+      relations: {
+        users: {
+          user: true,
+        },
+        owner: true,
+      },
+    });
+    const members = {
+      ...result,
+      users: result.users.map(({ user }) => ({
+        user_id: user.user_id,
+        usrn: user.usrn,
+        avatar: user.avatar,
+        email: user.email,
+        fuln: user.fuln,
+        phone: user.phone,
+        role: user.role,
+      })),
+    };
+    return members;
   }
   async addMember(
     wksp_id: string,
     member: AddMemberDTO,
     wksp_owner: DecodeUser,
   ) {
+    // workspace
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id },
-      relations: { ...relationWithUser, ...relationWithOwner },
+      where: { wksp_id: wksp_id, owner: { user_id: wksp_owner.user_id } },
+      relations: { users: { user: true } },
     });
-    if (wksp.owner.user_id !== wksp_owner.user_id)
-      throw new ForbiddenException('Only owner can add member');
+    if (!wksp) throw new ForbiddenException('Workspace not found');
+
+    // user
     const user = await this.userRepository.findOne({
       where: { user_id: member.user_id },
       relations: { workspaces: true },
     });
     if (!user) throw new NotFoundException('User not found');
-    if (wksp.users.find((u) => u.user_id === member.user_id))
-      throw new ConflictException('User already in workspace');
-    wksp.users.push(user);
-    user.workspaces.push(wksp);
-    await Promise.all([
-      this.userRepository.save(user),
-      this.workspaceRepository.save(wksp),
-    ]);
 
-    return { success: true, message: 'Member added successfully' };
+    // check if user is already a member
+    const user_wksp = await this.userWorkspaceRepository.findOneBy({
+      workspace: { wksp_id: wksp_id },
+      user: { user_id: member.user_id },
+    });
+    if (user_wksp) throw new ForbiddenException('User already a member');
+    // user_workspace
+    const new_user_wksp = await this.userWorkspaceRepository.create({
+      workspace: wksp,
+      user: user,
+      crd_user_id: wksp_owner.user_id,
+    });
+    user.workspaces.push(user_wksp);
+    wksp.users.push(user_wksp);
+    return await Promise.all([
+      this.userWorkspaceRepository.save(new_user_wksp),
+      this.workspaceRepository.save(wksp),
+      this.userRepository.save(user),
+    ])
+      .then(() => {
+        return { success: true, message: 'Member added successfully' };
+      })
+      .catch((err) => {
+        return new ForbiddenException('Add member failed');
+      });
   }
   async removeMember(
     wksp_id: string,
-    member: RemoveMemberDTO,
+    member_id: number,
     wksp_owner: DecodeUser,
   ) {
-    try {
-      const wksp = await this.workspaceRepository.findOne({
-        where: { wksp_id: wksp_id, owner: { user_id: member.user_id } },
-        relations: { ...relationWithUser, ...relationWithOwner },
-      });
-      if (!wksp) throw new NotFoundException('Workspace not found');
-      if (wksp.owner.user_id === member.user_id)
-        throw new ForbiddenException('Cannot remove owner');
-      if (wksp.owner.user_id !== wksp_owner.user_id)
-        throw new ForbiddenException('Only owner can remove member');
-      const user = await this.userRepository.findOne({
-        where: { user_id: member.user_id },
-        relations: { workspaces: true },
-      });
-      if (!user) throw new NotFoundException('User not found');
-
-      wksp.users = wksp.users.filter((user) => user.user_id !== member.user_id);
-      user.workspaces = user.workspaces.filter(
-        (workspace) => workspace.wksp_id !== wksp.wksp_id,
-      );
-      await Promise.all([
-        this.workspaceRepository.save(wksp),
-        this.userRepository.save(user),
-      ]);
-      return { success: true, message: 'Member removed successfully' };
-    } catch (err) {
-      console.log(err);
-      throw new ForbiddenException('Remove member failed');
-    }
+    // user_workspace
+    const user_wksp = await this.userWorkspaceRepository.findOneBy({
+      workspace: { wksp_id: wksp_id },
+      user: { user_id: member_id },
+    });
+    if (!user_wksp) throw new NotFoundException('Member not found');
+    await Promise.all([
+      this.userWorkspaceRepository.softDelete(user_wksp.user_workspace_id),
+      this.userWorkspaceRepository.update(user_wksp.user_workspace_id, {
+        upd_user_id: wksp_owner.user_id,
+      }),
+    ]);
+    return { success: true, message: 'Member removed successfully' };
   }
   async franchiseWorkspace(
     wksp_id: string,
     data: FranchiseWorkspaceDTO,
     wksp_owner: DecodeUser,
   ) {
+    // workspace
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id },
-      relations: { ...relationWithUser, ...relationWithOwner },
+      where: { wksp_id: wksp_id, owner: { user_id: wksp_owner.user_id } },
+      relations: { owner: true, users: true },
     });
     if (!wksp) throw new NotFoundException('Workspace not found');
     if (wksp.owner.user_id !== wksp_owner.user_id)
       throw new ForbiddenException('Permission denied');
+
+    // new owner
     const new_owner = await this.userRepository.findOne({
-      where: { user_id: data.user_id },
+      where: { user_id: data.user_id, workspaces: { workspace: { wksp_id } } },
       relations: { workspacesOwner: true },
     });
-    if (!new_owner) throw new NotFoundException('New owner not found');
-    if (!wksp.users.find((u) => u.user_id === new_owner.user_id))
-      throw new ForbiddenException('New owner is not in workspace');
+    if (!new_owner) throw new NotFoundException('User is not in workspace');
+
+    // old owner
     const old_owner = await this.userRepository.findOne({
-      where: { user_id: wksp_owner.user_id },
+      where: { user_id: wksp_owner.user_id, workspacesOwner: { wksp_id } },
       relations: { workspacesOwner: true },
     });
     if (!old_owner) throw new NotFoundException('Old owner not found');
+
+    // franchise process
     old_owner.workspacesOwner = old_owner.workspacesOwner.filter(
       (workspace) => workspace.wksp_id !== wksp_id,
     );
     wksp.owner = new_owner;
     new_owner.workspacesOwner.push(wksp);
-    await Promise.all([
+    return await Promise.all([
+      this.workspaceRepository.save(wksp),
       this.userRepository.save(new_owner),
       this.userRepository.save(old_owner),
-      this.workspaceRepository.save(wksp),
-    ]);
-    return {
-      success: true,
-      message: 'Franchise workspace updated successfully',
-    };
+    ])
+      .then(() => {
+        return {
+          success: true,
+          message: 'Franchise workspace updated successfully',
+        };
+      })
+      .catch((err) => {
+        return new ForbiddenException('Franchise workspace failed');
+      });
   }
   // async addResource(resource: AddResourceDTO) {
   //   try {

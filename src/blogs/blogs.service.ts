@@ -57,7 +57,7 @@ export class BlogsService {
       if (!foundWorkspace) throw new NotFoundException('Workspace not found');
       // check workspace belong to user
 
-      if (!foundWorkspace.users.find((user) => user.user_id === user.user_id))
+      if (!foundWorkspace.users.find((u) => u.user.user_id === user.user_id))
         throw new NotAcceptableException('User not belong to the workspace');
     }
 
