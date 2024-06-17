@@ -53,7 +53,7 @@ export class User {
   // Relations
   // Workspaces
   @OneToMany(() => UserWorkspace, (user_workspace) => user_workspace.user)
-  workspaces: Workspace[];
+  workspaces: UserWorkspace[];
 
   // Workspaces-owner
   @OneToMany(() => Workspace, (workspaces) => workspaces.owner)
