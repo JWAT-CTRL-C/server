@@ -268,62 +268,85 @@ export class WorkspacesService {
     member: AddMemberDTO,
     wksp_owner: DecodeUser,
   ) {
-    // workspace
-    const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id, owner: { user_id: wksp_owner.user_id } },
-      relations: { users: { user: true } },
-    });
-    if (!wksp) throw new ForbiddenException('Workspace not found');
-
-    // user
-    const user = await this.userRepository.findOne({
-      where: { user_id: member.user_id },
-      relations: { workspaces: true },
-    });
-    if (!user) throw new NotFoundException('User not found');
-
     // check if user is already a member
-    const user_wksp = await this.userWorkspaceRepository.findOneBy({
-      workspace: { wksp_id: wksp_id },
-      user: { user_id: member.user_id },
+    const user_wksp = await this.userWorkspaceRepository.findOne({
+      where: {
+        workspace: { wksp_id: wksp_id },
+        user: { user_id: member.user_id },
+      },
     });
-    if (user_wksp) throw new ForbiddenException('User already a member');
-    // user_workspace
-    const new_user_wksp = await this.userWorkspaceRepository.create({
-      workspace: wksp,
-      user: user,
-      crd_user_id: wksp_owner.user_id,
-    });
-    user.workspaces.push(user_wksp);
-    wksp.users.push(user_wksp);
-    return await Promise.all([
-      this.userWorkspaceRepository.save(new_user_wksp),
-      this.workspaceRepository.save(wksp),
-      this.userRepository.save(user),
-    ])
-      .then(() => {
-        return { success: true, message: 'Member added successfully' };
-      })
-      .catch((err) => {
-        return new ForbiddenException('Add member failed');
+    if (user_wksp) {
+      if (!user_wksp.deleted_at) {
+        throw new ForbiddenException('User already a member');
+      } else {
+        user_wksp.deleted_at = null;
+        user_wksp.deleted_user_id = null;
+        user_wksp.upd_user_id = wksp_owner.user_id;
+        return await this.userWorkspaceRepository
+          .save(user_wksp)
+          .then(() => {
+            return { success: true, message: 'Member added successfully' };
+          })
+          .catch((err) => {
+            return new ForbiddenException('Add member failed');
+          });
+      }
+    } else {
+      // workspace
+      const wksp = await this.workspaceRepository.findOne({
+        where: { wksp_id: wksp_id, owner: { user_id: wksp_owner.user_id } },
+        relations: { users: { user: true } },
       });
+      if (!wksp) throw new ForbiddenException('Workspace not found');
+
+      // user
+      const user = await this.userRepository.findOne({
+        where: { user_id: member.user_id },
+        relations: { workspaces: true },
+      });
+      if (!user) throw new NotFoundException('User not found');
+      // user_workspace
+      const new_user_wksp = await this.userWorkspaceRepository.create({
+        workspace: wksp,
+        user: user,
+        crd_user_id: wksp_owner.user_id,
+      });
+      user.workspaces.push(user_wksp);
+      wksp.users.push(user_wksp);
+      return await Promise.all([
+        this.userWorkspaceRepository.save(new_user_wksp),
+        this.workspaceRepository.save(wksp),
+        this.userRepository.save(user),
+      ])
+        .then(() => {
+          return { success: true, message: 'Member added successfully' };
+        })
+        .catch((err) => {
+          return new ForbiddenException('Add member failed');
+        });
+    }
   }
   async removeMember(
     wksp_id: string,
     member_id: number,
     wksp_owner: DecodeUser,
   ) {
+    const wksp = await this.workspaceRepository.findOne({
+      where: { wksp_id: wksp_id },
+      relations: { owner: true },
+    });
+    if (wksp.owner.user_id === member_id)
+      throw new NotFoundException('Owner cannot be removed');
     // user_workspace
     const user_wksp = await this.userWorkspaceRepository.findOneBy({
       workspace: { wksp_id: wksp_id },
       user: { user_id: member_id },
     });
     if (!user_wksp) throw new NotFoundException('Member not found');
+    user_wksp.deleted_user_id = wksp_owner.user_id;
     await Promise.all([
+      this.userWorkspaceRepository.save(user_wksp),
       this.userWorkspaceRepository.softDelete(user_wksp.user_workspace_id),
-      this.userWorkspaceRepository.update(user_wksp.user_workspace_id, {
-        upd_user_id: wksp_owner.user_id,
-      }),
     ]);
     return { success: true, message: 'Member removed successfully' };
   }
