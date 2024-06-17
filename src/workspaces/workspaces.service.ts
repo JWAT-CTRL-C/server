@@ -134,32 +134,46 @@ export class WorkspacesService {
     }
   }
   async getOneWorkspace(wksp_id: string) {
-    return await this.workspaceRepository
-      .findOne({
-        select: {
-          wksp_id: true,
-          wksp_name: true,
-          wksp_desc: true,
-          owner: selectUserRelation,
-          users: true,
-          resources: true,
+    const result = await this.workspaceRepository.findOne({
+      select: {
+        wksp_id: true,
+        wksp_name: true,
+        wksp_desc: true,
+        owner: selectUserRelation,
+        users: true,
+        resources: true,
+      },
+      where: { wksp_id },
+      relations: {
+        owner: true,
+        users: {
+          user: true,
         },
-        where: { wksp_id },
-        relations: {
-          owner: true,
-          users: {
-            user: true,
-          },
-          resources: {
-            blog: true,
-          },
+        resources: {
+          blog: true,
         },
-      })
-      .then((workspace) => workspace)
-      .catch((err) => {
-        console.log(err);
-        return new NotFoundException('Workspace not found');
-      });
+      },
+    });
+    if (!result) throw new NotFoundException('Workspace not found');
+
+    const workspace = {
+      ...result,
+      users: result.users.map(({ user }) => ({
+        user_id: user.user_id,
+        usrn: user.usrn,
+        avatar: user.avatar,
+        email: user.email,
+        fuln: user.fuln,
+        phone: user.phone,
+        role: user.role,
+      })),
+    };
+    return workspace;
+    // .then((workspace) => workspace)
+    // .catch((err) => {
+    //   console.log(err);
+    //   return new NotFoundException('Workspace not found');
+    // });
   }
   async getUsersWorkspaces(user: DecodeUser) {
     try {
@@ -219,12 +233,13 @@ export class WorkspacesService {
       });
   }
   async getMember(wksp_id: string) {
-    return await this.workspaceRepository.find({
+    const result = await this.workspaceRepository.findOne({
       select: {
+        wksp_id: true,
+        wksp_name: true,
+        wksp_desc: true,
         owner: selectUserRelation,
-        users: {
-          user: selectUserRelation,
-        },
+        users: true,
       },
       where: { wksp_id },
       relations: {
@@ -234,6 +249,19 @@ export class WorkspacesService {
         owner: true,
       },
     });
+    const members = {
+      ...result,
+      users: result.users.map(({ user }) => ({
+        user_id: user.user_id,
+        usrn: user.usrn,
+        avatar: user.avatar,
+        email: user.email,
+        fuln: user.fuln,
+        phone: user.phone,
+        role: user.role,
+      })),
+    };
+    return members;
   }
   async addMember(
     wksp_id: string,
@@ -254,8 +282,14 @@ export class WorkspacesService {
     });
     if (!user) throw new NotFoundException('User not found');
 
+    // check if user is already a member
+    const user_wksp = await this.userWorkspaceRepository.findOneBy({
+      workspace: { wksp_id: wksp_id },
+      user: { user_id: member.user_id },
+    });
+    if (user_wksp) throw new ForbiddenException('User already a member');
     // user_workspace
-    const user_wksp = await this.userWorkspaceRepository.create({
+    const new_user_wksp = await this.userWorkspaceRepository.create({
       workspace: wksp,
       user: user,
       crd_user_id: wksp_owner.user_id,
@@ -263,7 +297,7 @@ export class WorkspacesService {
     user.workspaces.push(user_wksp);
     wksp.users.push(user_wksp);
     return await Promise.all([
-      this.userWorkspaceRepository.save(user_wksp),
+      this.userWorkspaceRepository.save(new_user_wksp),
       this.workspaceRepository.save(wksp),
       this.userRepository.save(user),
     ])
@@ -300,7 +334,7 @@ export class WorkspacesService {
   ) {
     // workspace
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id },
+      where: { wksp_id: wksp_id, owner: { user_id: wksp_owner.user_id } },
       relations: { owner: true, users: true },
     });
     if (!wksp) throw new NotFoundException('Workspace not found');
@@ -328,9 +362,9 @@ export class WorkspacesService {
     wksp.owner = new_owner;
     new_owner.workspacesOwner.push(wksp);
     return await Promise.all([
+      this.workspaceRepository.save(wksp),
       this.userRepository.save(new_owner),
       this.userRepository.save(old_owner),
-      this.workspaceRepository.save(wksp),
     ])
       .then(() => {
         return {
