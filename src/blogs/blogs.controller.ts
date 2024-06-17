@@ -135,8 +135,8 @@ export class BlogsController {
     type: 'string',
     required: true,
   })
-  remove(@Param('blog_id') blog_id: string) {
-    return this.blogsService.remove(blog_id);
+  remove(@Param('blog_id') blog_id: string, @User() user: DecodeUser) {
+    return this.blogsService.remove(blog_id, user);
   }
 
   @Get()

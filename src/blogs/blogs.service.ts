@@ -51,21 +51,26 @@ export class BlogsService {
     if (createBlogDTO.wksp_id) {
       const foundWorkspace = await this.workspaceRepository.findOne({
         where: { wksp_id: createBlogDTO.wksp_id },
-        relations: { owner: true, users: true },
+        relations: {
+          users: { user: true },
+          resources: {
+            blog: true,
+          },
+          owner: true,
+        },
       });
 
       // check workspace have exist
       if (!foundWorkspace) throw new NotFoundException('Workspace not found');
-     
-      const userId = user.user_id.toString();
+
+      const userInsideWorkspace = foundWorkspace.users.map((u) => u.user);
 
       // check workspace belong to user
-      const isUserInWorkspace = foundWorkspace.users.some(
-        (u) => u.user_workspace_id.toString() === userId,
+      const isUserInWorkspace = userInsideWorkspace.some(
+        (u) => u.user_id === user.user_id,
       );
-      const isUserOwner = foundWorkspace.owner.user_id.toString() === userId;
 
-      if (!isUserInWorkspace && !isUserOwner) {
+      if (!isUserInWorkspace) {
         throw new NotAcceptableException(
           'User does not belong to the workspace',
         );
@@ -241,7 +246,10 @@ export class BlogsService {
     return this.findBlogByID(blog_id);
   }
 
-  async remove(blog_id: string) {
+  async remove(blog_id: string, user: DecodeUser) {
+    await this.blogRepository.update(blog_id, {
+      deleted_user_id: user.user_id,
+    });
     await this.blogRepository.softDelete(blog_id);
 
     return { success: true, message: 'Blog removed successfully' };
