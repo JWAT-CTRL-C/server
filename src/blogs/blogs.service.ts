@@ -51,14 +51,35 @@ export class BlogsService {
     if (createBlogDTO.wksp_id) {
       const foundWorkspace = await this.workspaceRepository.findOne({
         where: { wksp_id: createBlogDTO.wksp_id },
-        relations: { ...relationWithUser },
+        relations: { owner: true, users: true },
       });
+
       // check workspace have exist
       if (!foundWorkspace) throw new NotFoundException('Workspace not found');
       // check workspace belong to user
 
-      if (!foundWorkspace.users.find((u) => u.user.user_id === user.user_id))
-        throw new NotAcceptableException('User not belong to the workspace');
+      // Convert to the same type
+      // Debugging: log user ids and workspace users for comparison
+      console.log('User ID:', user.user_id);
+      console.log('Workspace Owner ID:', foundWorkspace.owner.user_id);
+      console.log(
+        'Workspace Users:',
+        foundWorkspace.users.map((u) => u.user_workspace_id),
+      );
+
+      const userId = user.user_id.toString();
+
+      // check workspace belong to user
+      const isUserInWorkspace = foundWorkspace.users.some(
+        (u) => u.user_workspace_id.toString() === userId,
+      );
+      const isUserOwner = foundWorkspace.owner.user_id.toString() === userId;
+
+      if (!isUserInWorkspace && !isUserOwner) {
+        throw new NotAcceptableException(
+          'User does not belong to the workspace',
+        );
+      }
     }
 
     if (createBlogDTO.resrc_id) {
