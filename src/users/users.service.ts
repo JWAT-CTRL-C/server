@@ -115,8 +115,9 @@ export class UsersService {
     if (!foundUser) throw new NotFoundException('User not found');
 
     if (
-      foundUser.user_id !== user_id ||
-      (foundUser.role !== 'HM' && foundUser.role !== 'MA')
+      foundUser.user_id !== user_id &&
+      foundUser.role !== 'HM' &&
+      foundUser.role !== 'MA'
     )
       throw new ForbiddenException('You are not allowed to update this user');
 
