@@ -127,35 +127,8 @@ export class AuthService {
         },
       );
 
-      const refresh_token_used = await this.cacheService.get<string[]>(
-        `refresh_token_used::${user_id.toString()}`,
-      );
-
-      if (!refresh_token_used || !refresh_token_used.length) {
-        await this.cacheService.set(
-          `refresh_token_used::${user_id.toString()}`,
-          [refresh_token],
-          7 * 24 * 60 * 60 * 1000,
-        );
-      } else {
-        if (refresh_token_used.includes(refresh_token))
-          throw new UnauthorizedException('Refresh token has been used');
-
-        refresh_token_used.filter((token) => {
-          const decoded: JwtPayload = this.jwtService.decode(token);
-
-          if (decoded.exp < Date.now()) return false;
-
-          return true;
-        });
-
-        refresh_token_used.push(refresh_token);
-
-        await this.cacheService.set(
-          `refresh_token_used::${user_id.toString()}`,
-          refresh_token_used,
-          7 * 24 * 60 * 60 * 1000,
-        );
+      if (key.refresh_token !== refresh_token) {
+        throw new UnauthorizedException('Invalid refresh token');
       }
 
       const foundUser = await this.userRepository.findOne({
@@ -175,10 +148,14 @@ export class AuthService {
         key.private_key,
       );
 
+      const ttl = await this.cacheService.store.ttl(
+        `user::${foundUser.user_id.toString()}`,
+      );
+
       await this.cacheService.set(
         `user::${foundUser.user_id.toString()}`,
         { ...key, ...tokens },
-        7 * 24 * 60 * 60 * 1000,
+        ttl,
       );
 
       return tokens;
@@ -202,10 +179,7 @@ export class AuthService {
         },
       );
 
-      await Promise.all([
-        this.cacheService.del(`refresh_token_used::${user_id.toString()}`),
-        this.cacheService.del(`user::${decodeUser.user_id.toString()}`),
-      ]);
+      await this.cacheService.del(`user::${decodeUser.user_id.toString()}`);
 
       return { success: true, message: 'Logout successfully' };
     } catch (error) {
