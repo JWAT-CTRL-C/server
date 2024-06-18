@@ -247,6 +247,26 @@ export class BlogsService {
   }
 
   async remove(blog_id: string, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    //check user exist
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    const checOwnerBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id, user: { user_id: user.user_id } },
+      relations: { ...blogRelationWithUser },
+    });
+    // check blog belong to user
+    if (!checOwnerBlog)
+      throw new NotAcceptableException('Blog not belong to user');
+
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
     await this.blogRepository.update(blog_id, {
       deleted_user_id: user.user_id,
     });
