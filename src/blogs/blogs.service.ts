@@ -51,14 +51,30 @@ export class BlogsService {
     if (createBlogDTO.wksp_id) {
       const foundWorkspace = await this.workspaceRepository.findOne({
         where: { wksp_id: createBlogDTO.wksp_id },
-        relations: { ...relationWithUser },
+        relations: {
+          users: { user: true },
+          resources: {
+            blog: true,
+          },
+          owner: true,
+        },
       });
+
       // check workspace have exist
       if (!foundWorkspace) throw new NotFoundException('Workspace not found');
-      // check workspace belong to user
 
-      if (!foundWorkspace.users.find((u) => u.user.user_id === user.user_id))
-        throw new NotAcceptableException('User not belong to the workspace');
+      const userInsideWorkspace = foundWorkspace.users.map((u) => u.user);
+
+      // check workspace belong to user
+      const isUserInWorkspace = userInsideWorkspace.some(
+        (u) => u.user_id === user.user_id,
+      );
+
+      if (!isUserInWorkspace) {
+        throw new NotAcceptableException(
+          'User does not belong to the workspace',
+        );
+      }
     }
 
     if (createBlogDTO.resrc_id) {
@@ -230,7 +246,30 @@ export class BlogsService {
     return this.findBlogByID(blog_id);
   }
 
-  async remove(blog_id: string) {
+  async remove(blog_id: string, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    //check user exist
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    const checOwnerBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id, user: { user_id: user.user_id } },
+      relations: { ...blogRelationWithUser },
+    });
+    // check blog belong to user
+    if (!checOwnerBlog)
+      throw new NotAcceptableException('Blog not belong to user');
+
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    await this.blogRepository.update(blog_id, {
+      deleted_user_id: user.user_id,
+    });
     await this.blogRepository.softDelete(blog_id);
 
     return { success: true, message: 'Blog removed successfully' };
