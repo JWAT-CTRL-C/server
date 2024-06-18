@@ -3,15 +3,16 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  JoinTable,
-  ManyToMany,
   OneToMany,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Workspace } from './workspace.entity';
-import { BlogComment, BlogRating, Blog } from './blog.entity';
+import { Blog } from './blog.entity';
 import { Notification } from './notification.entity';
+import { BlogRating } from './blog-rating.entity';
+import { BlogComment } from './blog-comment.entity';
+import { UserWorkspace } from './user_workspace.entity';
 
 @Entity()
 export class User {
@@ -19,6 +20,14 @@ export class User {
   user_id: number;
   @Column('varchar', { length: 50, nullable: false })
   usrn: string;
+  @Column('text', { nullable: true })
+  avatar: string;
+  @Column('varchar', { length: 125, nullable: true })
+  email: string;
+  @Column('varchar', { length: 30, nullable: false })
+  fuln: string;
+  @Column('varchar', { length: 20, nullable: true })
+  phone: number;
   @Column('varchar', { length: 125, nullable: false })
   pass: string;
   @Column({
@@ -30,23 +39,25 @@ export class User {
   role: string;
   @DeleteDateColumn()
   deleted_at: Date;
+  @Column('integer', { nullable: true })
+  deleted_user_id: number;
   @CreateDateColumn()
   crd_at: Date;
+  @Column('integer', { nullable: true })
+  crd_user_id: number;
   @UpdateDateColumn()
   upd_at: Date;
+  @Column('integer', { nullable: true })
+  upd_user_id: number;
 
   // Relations
   // Workspaces
-  @ManyToMany(() => Workspace)
-  @JoinTable({
-    name: 'user_workspace',
-    joinColumn: { name: 'user_id' },
-    inverseJoinColumn: { name: 'wksp_id' },
-  })
-  workspaces: Workspace[];
-  // Workspace-owner
+  @OneToMany(() => UserWorkspace, (user_workspace) => user_workspace.user)
+  workspaces: UserWorkspace[];
+
+  // Workspaces-owner
   @OneToMany(() => Workspace, (workspaces) => workspaces.owner)
-  workspaceOwner: Workspace;
+  workspacesOwner: Workspace[];
 
   // Blogs
   @OneToMany(() => Blog, (blogs) => blogs.user)

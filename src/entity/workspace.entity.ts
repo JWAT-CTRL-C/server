@@ -11,12 +11,13 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Blog } from './blog.entity';
-import { Source } from './source.entity';
+import { Resource } from './resource.entity';
 import { Notification } from './notification.entity';
+import { UserWorkspace } from './user_workspace.entity';
 
 @Entity()
 export class Workspace {
-  @PrimaryColumn('uuid')
+  @PrimaryColumn('varchar')
   wksp_id: string;
   @Column('varchar', { length: 50, nullable: false })
   wksp_name: string;
@@ -24,25 +25,34 @@ export class Workspace {
   wksp_desc: string;
   @DeleteDateColumn()
   deleted_at: Date;
+  @Column('integer', { nullable: true })
+  deleted_user_id: number;
   @CreateDateColumn()
   crd_at: Date;
+  @Column('integer', { nullable: true })
+  crd_user_id: number;
   @UpdateDateColumn()
   upd_at: Date;
+  @Column('integer', { nullable: true })
+  upd_user_id: number;
 
   // relations
-
   // user-owner
-  @ManyToOne(() => User, (users) => users.workspaceOwner)
+  @ManyToOne(() => User, (user) => user.workspacesOwner)
   @JoinColumn({ name: 'owner_id' })
   owner: User;
 
-  // Blog
+  // Users
+  @OneToMany(() => UserWorkspace, (user_workspace) => user_workspace.workspace)
+  users: UserWorkspace[];
+
+  // Blogs
   @OneToMany(() => Blog, (blogs) => blogs.workspace)
   blogs: Blog[];
 
   // Sources
-  @OneToMany(() => Source, (sources) => sources.workspace)
-  sources: Source[];
+  @OneToMany(() => Resource, (resource) => resource.workspace)
+  resources: Resource[];
 
   // Notifications
   @OneToMany(() => Notification, (notifications) => notifications.workspace)

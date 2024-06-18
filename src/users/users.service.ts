@@ -1,27 +1,150 @@
+import * as bcrypt from 'bcrypt';
 import { randomInt } from 'crypto';
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from 'src/entity/user.entity';
+import { saltRounds } from 'src/lib/constant';
+import { Repository } from 'typeorm';
+
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+
+import { ChangePassDTO } from './dto/change-pass.dto';
+import { CreateUserDTO } from './dto/create-user.dto';
+import { UpdateProfileDTO } from './dto/update-profile.dto';
+import { DecodeUser } from 'src/lib/type';
+import { selectUser } from 'src/lib/constant/user';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  constructor(
+    @InjectRepository(User) private userRepository: Repository<User>,
+    private cloudinaryService: CloudinaryService,
+  ) {}
+
+  async createUser(createUserDTO: CreateUserDTO, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { usrn: createUserDTO.usrn },
+    });
+
+    if (foundUser) throw new ConflictException('Username already exists');
+
+    const hashedPassword = await bcrypt.hash(createUserDTO.pass, saltRounds);
+
+    const newUser = this.userRepository.create({
+      ...createUserDTO,
+      user_id: randomInt(99),
+      pass: hashedPassword,
+      crd_user_id: user.user_id,
+    });
+
+    await this.userRepository.save(newUser);
+
+    return { success: true, message: 'User created successfully' };
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async changePassword(changePassDTO: ChangePassDTO) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: changePassDTO.user_id },
+    });
+
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    const isMatch = await bcrypt.compare(changePassDTO.oldPass, foundUser.pass);
+
+    if (!isMatch) throw new UnauthorizedException('Old password is incorrect');
+
+    const hashedPassword = await bcrypt.hash(changePassDTO.newPass, saltRounds);
+
+    await this.userRepository.update(
+      { user_id: changePassDTO.user_id },
+      { pass: hashedPassword },
+    );
+
+    return { success: true, message: 'Password changed successfully' };
   }
 
-  findOne(id: number) {
-    return { id: randomInt(99), username: 'John', password: 'password' };
+  async getProfile(user_id: number) {
+    const user = await this.userRepository.findOne({
+      where: { user_id },
+      select: selectUser,
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async uploadImage(file: Express.Multer.File, user_id: number) {
+    const image = await this.cloudinaryService
+      .uploadImage(file, 'users')
+      .catch((e) => {
+        console.log(e);
+        throw new BadRequestException();
+      });
+
+    await this.userRepository.update(
+      { user_id: user_id },
+      { avatar: image.url },
+    );
+
+    return {
+      success: true,
+      data: {
+        public_id: image.public_id,
+        url: image.url,
+      },
+    };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async updateProfile(
+    user_id: number,
+    updateProfileDTO: UpdateProfileDTO,
+    user: DecodeUser,
+  ) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    if (
+      foundUser.user_id !== user_id &&
+      foundUser.role !== 'HM' &&
+      foundUser.role !== 'MA'
+    )
+      throw new ForbiddenException('You are not allowed to update this user');
+
+    await this.userRepository.update(
+      { user_id: user_id },
+      { ...updateProfileDTO, upd_user_id: user.user_id },
+    );
+
+    return { success: true, message: 'Profile updated successfully' };
+  }
+
+  async removeUser(user_id: number, user: DecodeUser) {
+    await Promise.all([
+      this.userRepository.softDelete({ user_id }),
+      this.userRepository.update(
+        { user_id },
+        { deleted_user_id: user.user_id },
+      ),
+    ]);
+
+    return { success: true, message: 'User deleted successfully' };
+  }
+  async getAllUsers() {
+    const users = await this.userRepository.find({
+      select: selectUser,
+    });
+
+    return users;
   }
 }
