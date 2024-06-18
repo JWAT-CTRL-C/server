@@ -24,7 +24,7 @@ export class User {
   avatar: string;
   @Column('varchar', { length: 125, nullable: true })
   email: string;
-  @Column('varchar', { length: 30, nullable: true })
+  @Column('varchar', { length: 30, nullable: false })
   fuln: string;
   @Column('varchar', { length: 20, nullable: true })
   phone: number;
