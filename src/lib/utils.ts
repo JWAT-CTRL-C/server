@@ -6,7 +6,8 @@ type entityName =
   | 'workspace'
   | 'notification'
   | 'blog_img'
-  | 'blog-comment';
+  | 'blog-comment'
+  | 'blog-rating';
 
 export const hashMD5 = (data: string) => {
   return createHash('md5').update(data).digest('hex');
@@ -20,6 +21,8 @@ export const generateUUID = (
     case 'blog':
       return `${ownerID}-${hashMD5(entityName)}-${Date.now()}`;
     case 'blog-comment':
+      return `${ownerID}-${hashMD5(entityName)}-${Date.now()}`;
+    case 'blog-rating':
       return `${ownerID}-${hashMD5(entityName)}-${Date.now()}`;
     case 'notification':
       return `${ownerID}-${hashMD5(entityName)}-${Date.now()}`;

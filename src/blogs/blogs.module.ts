@@ -10,6 +10,7 @@ import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { Workspace } from 'src/entity/workspace.entity';
 import { Resource } from 'src/entity/resource.entity';
 import { BlogComment } from 'src/entity/blog-comment.entity';
+import { BlogRating } from 'src/entity/blog-rating.entity';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { BlogComment } from 'src/entity/blog-comment.entity';
       Workspace,
       Resource,
       BlogComment,
+      BlogRating,
     ]),
     CloudinaryModule,
   ],

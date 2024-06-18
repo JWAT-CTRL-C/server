@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Query,
+  Put,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -197,10 +198,41 @@ export class BlogsController {
   }
 
   @Get(':blog_id/comment')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
   async findAllCommentByBlogId(
     @User() user: DecodeUser,
     @Param('blog_id') blog_id: string,
   ) {
     return await this.blogsService.findAllCommentByBlogId(blog_id, user);
+  }
+
+  @Put(':blog_id/rating')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  async ratingBlog(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.ratingBlog(blog_id, user);
+  }
+
+  @Get(':blog_id/rating')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  async isRatingBlog(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.isRatingBlog(blog_id, user);
   }
 }
