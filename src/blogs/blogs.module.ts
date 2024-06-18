@@ -9,10 +9,19 @@ import { Tag } from 'src/entity/tag.entity';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { Workspace } from 'src/entity/workspace.entity';
 import { Resource } from 'src/entity/resource.entity';
+import { BlogComment } from 'src/entity/blog-comment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Blog, Tag, BlogImage, Workspace, Resource]),
+    TypeOrmModule.forFeature([
+      User,
+      Blog,
+      Tag,
+      BlogImage,
+      Workspace,
+      Resource,
+      BlogComment,
+    ]),
     CloudinaryModule,
   ],
   controllers: [BlogsController],

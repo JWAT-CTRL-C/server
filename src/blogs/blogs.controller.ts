@@ -24,6 +24,7 @@ import { CreateBlogDTO } from './dto/create-blog.dto';
 import { UpdateBlogDTO } from './dto/update-blog.dto';
 import { User } from 'src/decorator/user.decorator';
 import { DecodeUser } from 'src/lib/type';
+import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
 
 @Controller('blogs')
 @ApiBearerAuth()
@@ -163,5 +164,43 @@ export class BlogsController {
       user,
       blog_tle,
     );
+  }
+
+  @Post(':blog_id/comment')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        blog_cmt_cont: {
+          example: 'This a comment for a blog',
+          type: 'string',
+        },
+      },
+      required: ['blog_cmt_cont'],
+    },
+  })
+  async createComment(
+    @Body() createBlogCommentDTO: CreateBlogCommentDTO,
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.createComment(
+      createBlogCommentDTO,
+      user,
+      blog_id,
+    );
+  }
+
+  @Get(':blog_id/comment')
+  async findAllCommentByBlogId(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.findAllCommentByBlogId(blog_id, user);
   }
 }
