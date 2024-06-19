@@ -167,7 +167,7 @@ export class BlogsController {
     );
   }
 
-  @Post(':blog_id/comment')
+  @Post(':blog_id/comments')
   @ApiParam({
     name: 'blog_id',
     type: 'string',
@@ -197,7 +197,7 @@ export class BlogsController {
     );
   }
 
-  @Get(':blog_id/comment')
+  @Get(':blog_id/comments')
   @ApiParam({
     name: 'blog_id',
     type: 'string',
