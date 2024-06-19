@@ -26,7 +26,7 @@ export class NotificationsService {
     private workspaceRepository: Repository<Workspace>,
   ) {}
 
-  async createNormalNotification(
+  async createGlobalNotification(
     socket: Socket,
     createNotificationDTO: CreateNotificationDTO,
   ) {
@@ -42,7 +42,7 @@ export class NotificationsService {
     socket.emit(NotificationType.NEW, newNotification);
 
     return {
-      event: NotificationType.CREATE_NORMAL,
+      event: NotificationType.CREATE_GLOBAL,
       notification: newNotification,
     };
   }
