@@ -8,7 +8,7 @@ import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Workspace } from 'src/entity/workspace.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { generateUUID } from 'src/lib/utils';
 import { User } from 'src/entity/user.entity';
 import {
@@ -273,7 +273,10 @@ export class WorkspacesService {
       where: {
         workspace: { wksp_id: wksp_id },
         user: { user_id: member.user_id },
+        deleted_user_id: Not(IsNull()),
+        deleted_at: Not(IsNull()),
       },
+      withDeleted: true,
     });
     if (user_wksp) {
       if (!user_wksp.deleted_at) {
