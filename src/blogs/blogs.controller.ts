@@ -235,4 +235,17 @@ export class BlogsController {
   ) {
     return await this.blogsService.isRatingBlog(blog_id, user);
   }
+
+  @Get(':blog_id/related')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  async relatedBlogs(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.relatedBlogs(blog_id, user);
+  }
 }
