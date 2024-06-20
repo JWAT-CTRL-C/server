@@ -118,7 +118,7 @@ export class AuthService {
         `user::${user_id.toString()}`,
       );
 
-      if (!key) throw new BadRequestException('User not found');
+      if (!key) throw new NotFoundException('Key not found');
 
       const decodeUser: JwtPayload = await this.jwtService.verifyAsync(
         refresh_token,
