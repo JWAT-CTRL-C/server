@@ -18,10 +18,6 @@ import {
 import { AddMemberDTO } from './dto/add-member.dto';
 import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
 import { DecodeUser } from 'src/lib/type';
-import {
-  relationWithResources,
-  selectResources,
-} from 'src/lib/constant/resource';
 import { UserWorkspace } from 'src/entity/user_workspace.entity';
 
 @Injectable()
@@ -193,25 +189,39 @@ export class WorkspacesService {
           },
           owner: true,
         },
+        where: {
+          users: {
+            deleted_at: IsNull(),
+            deleted_user_id: IsNull(),
+          },
+          owner: Not(IsNull()),
+        },
       });
-      const new_wksp = workspace.map((wksp) => {
-        if (wksp.users.length === 0) {
-          return wksp;
-        } else {
-          return {
-            ...wksp,
-            users: wksp.users.map(({ user }) => ({
-              user_id: user.user_id,
-              usrn: user.usrn,
-              avatar: user.avatar,
-              email: user.email,
-              fuln: user.fuln,
-              phone: user.phone,
-              role: user.role,
-            })),
-          };
-        }
-      });
+      const new_wksp = workspace
+        .map((wksp) => {
+          if (wksp.users.length === 0) {
+            return wksp;
+          } else {
+            if (
+              wksp.users.some((u) => u.user.user_id === user.user_id) ||
+              user.role === 'MA'
+            ) {
+              return {
+                ...wksp,
+                users: wksp.users.map(({ user }) => ({
+                  user_id: user.user_id,
+                  usrn: user.usrn,
+                  avatar: user.avatar,
+                  email: user.email,
+                  fuln: user.fuln,
+                  phone: user.phone,
+                  role: user.role,
+                })),
+              };
+            }
+          }
+        })
+        .filter((wksp) => !!wksp);
       return new_wksp;
     } catch (err) {
       console.log(err);
