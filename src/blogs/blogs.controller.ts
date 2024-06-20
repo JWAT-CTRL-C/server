@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Query,
+  Put,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -24,6 +25,7 @@ import { CreateBlogDTO } from './dto/create-blog.dto';
 import { UpdateBlogDTO } from './dto/update-blog.dto';
 import { User } from 'src/decorator/user.decorator';
 import { DecodeUser } from 'src/lib/type';
+import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
 
 @Controller('blogs')
 @ApiBearerAuth()
@@ -163,5 +165,74 @@ export class BlogsController {
       user,
       blog_tle,
     );
+  }
+
+  @Post(':blog_id/comments')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        blog_cmt_cont: {
+          example: 'This a comment for a blog',
+          type: 'string',
+        },
+      },
+      required: ['blog_cmt_cont'],
+    },
+  })
+  async createComment(
+    @Body() createBlogCommentDTO: CreateBlogCommentDTO,
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.createComment(
+      createBlogCommentDTO,
+      user,
+      blog_id,
+    );
+  }
+
+  @Get(':blog_id/comments')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  async findAllCommentByBlogId(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.findAllCommentByBlogId(blog_id, user);
+  }
+
+  @Put(':blog_id/rating')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  async ratingBlog(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.ratingBlog(blog_id, user);
+  }
+
+  @Get(':blog_id/rating')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  async isRatingBlog(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.isRatingBlog(blog_id, user);
   }
 }

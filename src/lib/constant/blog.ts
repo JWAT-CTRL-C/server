@@ -5,8 +5,12 @@ export const relationsBlog = {
   user: true,
   tags: true,
   blogImage: true,
-  blogComments: true,
-  blogRatings: true,
+  blogComments: {
+    user: true,
+  },
+  blogRatings: {
+    user: true,
+  },
 
   workspace: true,
   resource: true,
