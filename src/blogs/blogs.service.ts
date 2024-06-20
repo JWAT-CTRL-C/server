@@ -439,47 +439,4 @@ export class BlogsService {
       total_rating: totalRating,
     };
   }
-
-  async relatedBlogs(blog_id: string, user: DecodeUser) {
-    const check = await Promise.allSettled([
-      this.blogRepository.findOne({
-        where: { blog_id: blog_id },
-        relations: {
-          tags: true,
-        },
-      }),
-      this.userRepository.findOne({
-        where: { user_id: user.user_id },
-      }),
-    ]);
-
-    const foundBlog = check[0];
-    const foundUser = check[1];
-
-    if (foundBlog.status !== 'fulfilled')
-      throw new NotFoundException('Blog not found');
-
-    if (foundUser.status !== 'fulfilled')
-      throw new NotFoundException('User not found');
-
-    const relatedBlogs = await this.blogRepository.find({
-      where: [
-        {
-          tags: { tag_id: In(foundBlog.value.tags.map((tag) => tag.tag_id)) },
-        },
-        {
-          user: {
-            user_id: foundUser.value.user_id,
-          },
-        },
-      ],
-      relations: {
-        tags: true,
-        user: true,
-      },
-      take: 5,
-    });
-
-    return relatedBlogs;
-  }
 }
