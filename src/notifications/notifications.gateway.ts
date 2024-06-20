@@ -22,7 +22,7 @@ export class NotificationsGateway {
 
   @SubscribeMessage(NotificationType.SETUP_USER)
   setupNormal(socket: Socket, user_id: string) {
-    socket.join(user_id);
+    if (user_id) socket.join(user_id);
 
     return { event: NotificationType.SETUP_USER, user_id };
   }
