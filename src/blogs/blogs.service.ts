@@ -479,6 +479,9 @@ export class BlogsService {
         blogRatings: {
           user: true,
         },
+        blogComments: {
+          user: true,
+        },
       },
       take: 3,
     });
