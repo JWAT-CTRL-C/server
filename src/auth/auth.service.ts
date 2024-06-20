@@ -40,7 +40,6 @@ export class AuthService {
         privateKey,
         algorithm: 'RS256',
         expiresIn: '30 minutes',
-        // expiresIn: '7 days',
       }),
       this.jwtService.signAsync(payload, {
         privateKey,
@@ -160,6 +159,7 @@ export class AuthService {
 
       return tokens;
     } catch (error) {
+      console.error(error);
       throw new HttpException(error.message, error.status ?? 401);
     }
   }

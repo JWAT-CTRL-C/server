@@ -74,11 +74,18 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: { user_id },
       select: selectUser,
+      relations: { workspaces: { workspace: true } },
     });
 
     if (!user) throw new NotFoundException('User not found');
 
-    return user;
+    return {
+      ...user,
+      workspaces: user.workspaces.map((w) => ({
+        wksp_id: w.workspace.wksp_id,
+        wksp_name: w.workspace.wksp_name,
+      })),
+    };
   }
 
   async uploadImage(file: Express.Multer.File, user_id: number) {
