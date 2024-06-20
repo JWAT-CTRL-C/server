@@ -8,7 +8,7 @@ import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Workspace } from 'src/entity/workspace.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { generateUUID } from 'src/lib/utils';
 import { User } from 'src/entity/user.entity';
 import {
@@ -18,10 +18,6 @@ import {
 import { AddMemberDTO } from './dto/add-member.dto';
 import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
 import { DecodeUser } from 'src/lib/type';
-import {
-  relationWithResources,
-  selectResources,
-} from 'src/lib/constant/resource';
 import { UserWorkspace } from 'src/entity/user_workspace.entity';
 
 @Injectable()
@@ -193,25 +189,39 @@ export class WorkspacesService {
           },
           owner: true,
         },
+        where: {
+          users: {
+            deleted_at: IsNull(),
+            deleted_user_id: IsNull(),
+          },
+          owner: Not(IsNull()),
+        },
       });
-      const new_wksp = workspace.map((wksp) => {
-        if (wksp.users.length === 0) {
-          return wksp;
-        } else {
-          return {
-            ...wksp,
-            users: wksp.users.map(({ user }) => ({
-              user_id: user.user_id,
-              usrn: user.usrn,
-              avatar: user.avatar,
-              email: user.email,
-              fuln: user.fuln,
-              phone: user.phone,
-              role: user.role,
-            })),
-          };
-        }
-      });
+      const new_wksp = workspace
+        .map((wksp) => {
+          if (wksp.users.length === 0) {
+            return wksp;
+          } else {
+            if (
+              wksp.users.some((u) => u.user.user_id === user.user_id) ||
+              user.role === 'MA'
+            ) {
+              return {
+                ...wksp,
+                users: wksp.users.map(({ user }) => ({
+                  user_id: user.user_id,
+                  usrn: user.usrn,
+                  avatar: user.avatar,
+                  email: user.email,
+                  fuln: user.fuln,
+                  phone: user.phone,
+                  role: user.role,
+                })),
+              };
+            }
+          }
+        })
+        .filter((wksp) => !!wksp);
       return new_wksp;
     } catch (err) {
       console.log(err);
@@ -273,7 +283,10 @@ export class WorkspacesService {
       where: {
         workspace: { wksp_id: wksp_id },
         user: { user_id: member.user_id },
+        deleted_user_id: Not(IsNull()),
+        deleted_at: Not(IsNull()),
       },
+      withDeleted: true,
     });
     if (user_wksp) {
       if (!user_wksp.deleted_at) {

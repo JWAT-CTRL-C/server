@@ -14,12 +14,16 @@ import { Request } from 'express';
 import { HEADER, IS_PUBLIC_KEY } from 'src/lib/constant';
 import { JwtPayload, KeyPair, TokenPair } from 'src/lib/type';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { DataSource } from 'typeorm';
+import { User } from 'src/entity/user.entity';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
     private reflector: Reflector,
+    private dataSource: DataSource,
+
     @Inject(CACHE_MANAGER) private cacheService: Cache,
   ) {}
 
@@ -50,8 +54,11 @@ export class AuthGuard implements CanActivate {
 
       if (payload.user_id !== user_id)
         throw new ForbiddenException('Token is invalid');
-
-      request['user'] = payload;
+      const user = await this.dataSource
+        .getRepository(User)
+        .findOneBy({ user_id });
+      console.log(user);
+      request['user'] = { ...payload, role: user.role };
     } catch (error) {
       console.error(error);
       throw new HttpException(error.message, error.status ?? 419);
