@@ -6,25 +6,27 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, Like, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 
-import { CreateBlogDTO } from './dto/create-blog.dto';
-import { UpdateBlogDTO } from './dto/update-blog.dto';
-import { DecodeUser } from 'src/lib/type';
-import { User } from 'src/entity/user.entity';
-import { Blog } from 'src/entity/blog.entity';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { BlogImage } from 'src/entity/blog-image.entity';
+import { Blog } from 'src/entity/blog.entity';
+import { Resource } from 'src/entity/resource.entity';
 import { Tag } from 'src/entity/tag.entity';
-import { generateUUID } from 'src/lib/utils';
+import { User } from 'src/entity/user.entity';
+import { Workspace } from 'src/entity/workspace.entity';
 import {
   blogRelationWithUser,
   relationsBlog,
   selectBlog,
 } from 'src/lib/constant/blog';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { Workspace } from 'src/entity/workspace.entity';
-import { relationWithUser } from 'src/lib/constant/workspace';
-import { Resource } from 'src/entity/resource.entity';
+import { DecodeUser } from 'src/lib/type';
+import { generateUUID } from 'src/lib/utils';
+import { CreateBlogDTO } from './dto/create-blog.dto';
+import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
+import { UpdateBlogDTO } from './dto/update-blog.dto';
+import { BlogComment } from 'src/entity/blog-comment.entity';
+import { BlogRating } from 'src/entity/blog-rating.entity';
 
 @Injectable()
 export class BlogsService {
@@ -39,6 +41,10 @@ export class BlogsService {
     private readonly workspaceRepository: Repository<Workspace>,
     @InjectRepository(Resource)
     private readonly resourceRepository: Repository<Resource>,
+    @InjectRepository(BlogComment)
+    private readonly blogCommentRepository: Repository<BlogComment>,
+    @InjectRepository(BlogRating)
+    private readonly blogRatingRepository: Repository<BlogRating>,
   ) {}
 
   async createBlog(createBlogDTO: CreateBlogDTO, user: DecodeUser) {
@@ -168,6 +174,8 @@ export class BlogsService {
       select: selectBlog,
     });
 
+    if (!blog) throw new NotFoundException('Blog not found');
+
     return blog;
   }
 
@@ -180,12 +188,12 @@ export class BlogsService {
       where: { user_id: user.user_id },
     });
 
-    const checOwnerBlog = await this.blogRepository.findOne({
+    const checkOwnerBlog = await this.blogRepository.findOne({
       where: { blog_id: blog_id, user: { user_id: user.user_id } },
       relations: { ...blogRelationWithUser },
     });
     // check blog belong to user
-    if (!checOwnerBlog)
+    if (!checkOwnerBlog)
       throw new NotAcceptableException('Blog not belong to user');
 
     //check user exist
@@ -253,12 +261,12 @@ export class BlogsService {
     //check user exist
     if (!foundUser) throw new NotFoundException('User not found');
 
-    const checOwnerBlog = await this.blogRepository.findOne({
+    const checkOwnerBlog = await this.blogRepository.findOne({
       where: { blog_id: blog_id, user: { user_id: user.user_id } },
       relations: { ...blogRelationWithUser },
     });
     // check blog belong to user
-    if (!checOwnerBlog)
+    if (!checkOwnerBlog)
       throw new NotAcceptableException('Blog not belong to user');
 
     //check blog exist
@@ -308,5 +316,127 @@ export class BlogsService {
       select: selectBlog,
     });
     return foundBlogs;
+  }
+
+  async createComment(
+    createBlogCommentDTO: CreateBlogCommentDTO,
+    user: DecodeUser,
+    blog_id: string,
+  ) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    //check user exist
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    const createdBlogComment = await this.blogCommentRepository.create({
+      ...createBlogCommentDTO,
+      blog_cmt_id: generateUUID('blog-comment', user.user_id),
+      user: { user_id: user.user_id },
+      blog: foundBlog,
+    });
+    await this.blogCommentRepository.save(createdBlogComment);
+    return { success: true, message: 'Create comment successfully' };
+  }
+
+  async findAllCommentByBlogId(blog_id: string, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    //check user exist
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    return await this.blogCommentRepository.find({
+      where: { blog: { blog_id: blog_id } },
+      relations: { user: true },
+      order: {
+        crd_at: 'DESC',
+      },
+    });
+  }
+
+  async ratingBlog(blog_id: string, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    //check user exist
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    const foundBlogRating = await this.blogRatingRepository.findOne({
+      where: { blog: { blog_id: blog_id }, user: { user_id: user.user_id } },
+    });
+    if (!foundBlogRating) {
+      const createdBlogRating = await this.blogRatingRepository.create({
+        blog_rtg_id: generateUUID('blog-rating', user.user_id),
+        blog: foundBlog,
+        user: foundUser,
+        is_rated: true,
+      });
+      await this.blogRatingRepository.save(createdBlogRating);
+    } else {
+      foundBlogRating.is_rated = !foundBlogRating.is_rated;
+      await this.blogRatingRepository.save(foundBlogRating);
+    }
+
+    return { success: true, message: 'Rating a blog successfully' };
+  }
+
+  async isRatingBlog(blog_id: string, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    //check user exist
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    const foundBlogRating = await this.blogRatingRepository.findOne({
+      where: { blog: { blog_id: blog_id }, user: { user_id: user.user_id } },
+    });
+    if (!foundBlogRating) {
+      throw new NotFoundException('Not found blog rating');
+    }
+
+    return {
+      is_rated: foundBlogRating.is_rated,
+    };
+  }
+
+  async totalRating(blog_id: string) {
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    const foundBlogRating = await this.blogRatingRepository.find({
+      where: { blog: { blog_id: blog_id } },
+    });
+    const totalRating = foundBlogRating.length;
+    return {
+      total_rating: totalRating,
+    };
   }
 }

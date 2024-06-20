@@ -20,12 +20,19 @@ export class NotificationsGateway {
     return { event: NotificationType.SETUP_WORKSPACE, wksp_id };
   }
 
-  @SubscribeMessage(NotificationType.CREATE_NORMAL)
-  createNormalNotification(
+  @SubscribeMessage(NotificationType.SETUP_USER)
+  setupNormal(socket: Socket, user_id: string) {
+    socket.join(user_id);
+
+    return { event: NotificationType.SETUP_USER, user_id };
+  }
+
+  @SubscribeMessage(NotificationType.CREATE_GLOBAL)
+  createGlobalNotification(
     socket: Socket,
     createNotificationDTO: CreateNotificationDTO,
   ) {
-    return this.notificationsService.createNormalNotification(
+    return this.notificationsService.createGlobalNotification(
       socket,
       createNotificationDTO,
     );
