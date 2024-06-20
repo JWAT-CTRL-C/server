@@ -476,6 +476,9 @@ export class BlogsService {
       relations: {
         tags: true,
         user: true,
+        blogRatings: {
+          user: true,
+        },
       },
       take: 3,
     });
