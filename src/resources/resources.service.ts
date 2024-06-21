@@ -35,11 +35,38 @@ export class ResourcesService {
   }
   // get one resource belong to workspace
   async getWorkspaceResource(wksp_id: string, resrc_id: string) {
-    return await this.resourceRepository.findOne({
-      select: selectResources,
+    const result = await this.resourceRepository.findOne({
+      select: {
+        resrc_id: true,
+        resrc_name: true,
+        resrc_url: true,
+        blog: {
+          blog_id: true,
+          blog_tle: true,
+          blogRatings: true,
+          blogImage: {
+            blog_img_id: true,
+            blog_img_url: true,
+          },
+          tags: {
+            tag_name: true,
+          },
+        },
+        workspace: {
+          owner: {
+            user_id: true,
+          },
+        },
+      },
       where: { workspace: { wksp_id }, resrc_id },
-      relations: { workspace: true },
+      relations: { workspace: true, blog: true },
     });
+    if (!result) throw new NotFoundException('Resource not found');
+    const resource = {
+      ...result,
+      blog: result.blog ? result.blog : [],
+    };
+    return resource;
   }
   // add new resource into workspace
   async addResource(
@@ -47,8 +74,11 @@ export class ResourcesService {
     resource: CreateResourceDTO,
     user: DecodeUser,
   ) {
+    const condition = ['MA', 'HM'].includes(user.role)
+      ? {}
+      : { owner: { user_id: user.user_id } };
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id },
+      where: { wksp_id: wksp_id, ...condition },
       relations: { resources: true },
     });
     if (!wksp) {
@@ -104,10 +134,15 @@ export class ResourcesService {
       throw new NotFoundException('Resource not found');
     }
     rsrc.deleted_user_id = user.user_id;
-    await Promise.all([
+    return await Promise.all([
       this.resourceRepository.save(rsrc),
       this.resourceRepository.softDelete(resrc_id),
-    ]);
-    return { success: true, message: 'Resource deleted successfully' };
+    ])
+      .then(() => {
+        return { success: true, message: 'Resource deleted successfully' };
+      })
+      .catch(() => {
+        return new ForbiddenException('Resource deleted failed');
+      });
   }
 }

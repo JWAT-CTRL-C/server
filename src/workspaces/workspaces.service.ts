@@ -71,8 +71,11 @@ export class WorkspacesService {
     updateWorkspaceDTO: UpdateWorkspaceDTO,
     wksp_owner: DecodeUser,
   ) {
+    const condition = ['MA', 'HM'].includes(wksp_owner.role)
+      ? {}
+      : { owner: { user_id: wksp_owner.user_id } };
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id, owner: { user_id: wksp_owner.user_id } },
+      where: { wksp_id, ...condition },
       relations: { owner: true },
     });
     if (!wksp) throw new ForbiddenException('Update workspace failed');
@@ -137,7 +140,35 @@ export class WorkspacesService {
         wksp_desc: true,
         owner: selectUserRelation,
         users: true,
-        resources: true,
+        resources: {
+          resrc_id: true,
+          resrc_name: true,
+          resrc_url: true,
+          blog: {
+            blog_id: true,
+            blog_tle: true,
+            blogRatings: true,
+            blogImage: {
+              blog_img_id: true,
+              blog_img_url: true,
+            },
+            tags: {
+              tag_name: true,
+            },
+          },
+        },
+        blogs: {
+          blog_id: true,
+          blog_tle: true,
+          blogRatings: true,
+          blogImage: {
+            blog_img_id: true,
+            blog_img_url: true,
+          },
+          tags: {
+            tag_name: true,
+          },
+        },
       },
       where: { wksp_id },
       relations: {
@@ -148,12 +179,19 @@ export class WorkspacesService {
         resources: {
           blog: true,
         },
+        blogs: true,
       },
     });
     if (!result) throw new NotFoundException('Workspace not found');
-
+    const allBlog = result.resources.reduce((acc, resrc) => {
+      if (resrc.blog) {
+        acc.push(resrc.blog);
+      }
+      return acc;
+    }, []);
     const workspace = {
       ...result,
+      blogs: [...allBlog, ...result.blogs],
       users: result.users.map(({ user }) => ({
         user_id: user.user_id,
         usrn: user.usrn,
@@ -204,7 +242,8 @@ export class WorkspacesService {
           } else {
             if (
               wksp.users.some((u) => u.user.user_id === user.user_id) ||
-              user.role === 'MA'
+              user.role === 'MA' ||
+              user.role === 'HM'
             ) {
               return {
                 ...wksp,
@@ -305,9 +344,12 @@ export class WorkspacesService {
           });
       }
     } else {
+      const condition = ['MA', 'HM'].includes(wksp_owner.role)
+        ? {}
+        : { owner: { user_id: wksp_owner.user_id } };
       // workspace
       const wksp = await this.workspaceRepository.findOne({
-        where: { wksp_id: wksp_id, owner: { user_id: wksp_owner.user_id } },
+        where: { wksp_id: wksp_id, ...condition },
         relations: { users: { user: true } },
       });
       if (!wksp) throw new ForbiddenException('Workspace not found');
@@ -344,8 +386,11 @@ export class WorkspacesService {
     member_id: number,
     wksp_owner: DecodeUser,
   ) {
+    const condition = ['MA', 'HM'].includes(wksp_owner.role)
+      ? {}
+      : { owner: { user_id: wksp_owner.user_id } };
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id },
+      where: { wksp_id: wksp_id, ...condition },
       relations: { owner: true },
     });
     if (wksp.owner.user_id === member_id)
@@ -368,13 +413,19 @@ export class WorkspacesService {
     data: FranchiseWorkspaceDTO,
     wksp_owner: DecodeUser,
   ) {
+    const condition = ['MA', 'HM'].includes(wksp_owner.role)
+      ? {}
+      : { owner: { user_id: wksp_owner.user_id } };
     // workspace
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id, owner: { user_id: wksp_owner.user_id } },
+      where: { wksp_id: wksp_id, ...condition },
       relations: { owner: true, users: true },
     });
     if (!wksp) throw new NotFoundException('Workspace not found');
-    if (wksp.owner.user_id !== wksp_owner.user_id)
+    if (
+      wksp.owner.user_id !== wksp_owner.user_id &&
+      !['MA', 'HM'].includes(wksp_owner.role)
+    )
       throw new ForbiddenException('Permission denied');
 
     // new owner
@@ -386,7 +437,7 @@ export class WorkspacesService {
 
     // old owner
     const old_owner = await this.userRepository.findOne({
-      where: { user_id: wksp_owner.user_id, workspacesOwner: { wksp_id } },
+      where: { user_id: wksp.owner.user_id, workspacesOwner: { wksp_id } },
       relations: { workspacesOwner: true },
     });
     if (!old_owner) throw new NotFoundException('Old owner not found');
