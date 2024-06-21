@@ -21,7 +21,7 @@ import {
   selectBlog,
 } from 'src/lib/constant/blog';
 import { DecodeUser } from 'src/lib/type';
-import { generateUUID } from 'src/lib/utils';
+import { generateUUID, getRandomBlogs } from 'src/lib/utils';
 import { CreateBlogDTO } from './dto/create-blog.dto';
 import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
 import { UpdateBlogDTO } from './dto/update-blog.dto';
@@ -438,5 +438,44 @@ export class BlogsService {
     return {
       total_rating: totalRating,
     };
+  }
+
+  async relatedBlogs(blog_id: string, user: DecodeUser) {
+    const check = await Promise.allSettled([
+      this.blogRepository.findOne({
+        where: { blog_id: blog_id },
+        relations: {
+          tags: true,
+        },
+      }),
+      this.userRepository.findOne({
+        where: { user_id: user.user_id },
+      }),
+    ]);
+
+    const foundBlog = check[0];
+    const foundUser = check[1];
+
+    if (foundBlog.status !== 'fulfilled')
+      throw new NotFoundException('Blog not found');
+
+    if (foundUser.status !== 'fulfilled')
+      throw new NotFoundException('User not found');
+
+    const relatedBlogs = await this.blogRepository.find({
+      where: [
+        {
+          tags: { tag_id: In(foundBlog.value.tags.map((tag) => tag.tag_id)) },
+        },
+        {
+          user: {
+            user_id: foundUser.value.user_id,
+          },
+        },
+      ],
+      relations: relationsBlog,
+    });
+
+    return getRandomBlogs(relatedBlogs, 3);
   }
 }
