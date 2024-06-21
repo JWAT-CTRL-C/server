@@ -473,16 +473,7 @@ export class BlogsService {
           },
         },
       ],
-      relations: {
-        tags: true,
-        user: true,
-        blogRatings: {
-          user: true,
-        },
-        blogComments: {
-          user: true,
-        },
-      },
+      relations: relationsBlog,
       take: 3,
     });
 
