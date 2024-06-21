@@ -228,6 +228,71 @@ export class WorkspacesService {
       return new ForbiddenException('Get workspace failed');
     }
   }
+  async getRecentWorkspaces(user: DecodeUser) {
+    try {
+      const workspaces = await this.workspaceRepository.find({
+        select: {
+          wksp_id: true,
+          wksp_name: true,
+          wksp_desc: true,
+          users: true,
+          owner: selectUserRelation,
+          resources: true,
+          crd_at: true,
+        },
+        relations: {
+          users: { user: true },
+          resources: {
+            blog: true,
+          },
+          owner: true,
+        },
+        where: {
+          users: {
+            deleted_at: IsNull(),
+            deleted_user_id: IsNull(),
+          },
+          owner: Not(IsNull()),
+        },
+      });
+      const mapped_workspaces = workspaces
+        .map((wksp) => {
+          if (
+            wksp.users.some((u) => u.user.user_id === user.user_id) ||
+            user.role === 'MA'
+          ) {
+            return {
+              ...wksp,
+              users: wksp.users.map(({ user, upd_at }) => ({
+                user_id: user.user_id,
+                usrn: user.usrn,
+                avatar: user.avatar,
+                email: user.email,
+                fuln: user.fuln,
+                phone: user.phone,
+                role: user.role,
+                upd_at,
+              })),
+            };
+          }
+        })
+        .filter((wksp) => Boolean(wksp))
+        .sort((a, b) => {
+          if (user.role === 'MA') {
+            return new Date(b.crd_at).getTime() - new Date(a.crd_at).getTime();
+          } else {
+            const meA = a.users.find((u) => u.user_id === user.user_id);
+            const meB = b.users.find((u) => u.user_id === user.user_id);
+
+            return meB.upd_at.getTime() - meA.upd_at.getTime();
+          }
+        });
+      return mapped_workspaces;
+    } catch (err) {
+      console.log(err);
+      return new ForbiddenException('Get workspace failed');
+    }
+  }
   async removeWorkspace(wksp_id: string, wksp_owner: DecodeUser) {
     return await Promise.all([
       this.workspaceRepository.softDelete(wksp_id),
