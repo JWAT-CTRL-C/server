@@ -183,15 +183,8 @@ export class WorkspacesService {
       },
     });
     if (!result) throw new NotFoundException('Workspace not found');
-    const allBlog = result.resources.reduce((acc, resrc) => {
-      if (resrc.blog) {
-        acc.push(resrc.blog);
-      }
-      return acc;
-    }, []);
     const workspace = {
       ...result,
-      blogs: [...allBlog, ...result.blogs],
       users: result.users.map(({ user }) => ({
         user_id: user.user_id,
         usrn: user.usrn,

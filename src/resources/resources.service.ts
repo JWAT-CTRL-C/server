@@ -48,7 +48,14 @@ export class ResourcesService {
             blog_img_id: true,
             blog_img_url: true,
           },
+          user: {
+            user_id: true,
+            usrn: true,
+            fuln: true,
+            avatar: true,
+          },
           tags: {
+            tag_id: true,
             tag_name: true,
           },
         },
