@@ -57,11 +57,13 @@ export class AuthGuard implements CanActivate {
       const user = await this.dataSource
         .getRepository(User)
         .findOneBy({ user_id });
-      console.log(user);
       request['user'] = { ...payload, role: user.role };
     } catch (error) {
       console.error(error);
-      throw new HttpException(error.message, error.status ?? 419);
+      throw new HttpException(
+        error.message,
+        error.status ?? (error.message.includes('invalid') ? 401 : 419),
+      );
     }
 
     return true;
