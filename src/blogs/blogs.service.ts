@@ -290,6 +290,17 @@ export class BlogsService {
     return blogs;
   }
 
+  async getRecentBlogs() {
+    const blogs = await this.blogRepository.find({
+      relations: relationsBlog,
+      order: {
+        crd_at: 'DESC',
+      },
+      take: 6,
+    });
+    return blogs;
+  }
+
   async findAllByUserId(user: DecodeUser) {
     const foundUser = await this.userRepository.findOne({
       where: { user_id: user.user_id },
