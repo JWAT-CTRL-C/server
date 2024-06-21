@@ -59,6 +59,13 @@ export class WorkspacesController {
   getAllWorkspaces() {
     return this.workspacesService.getAllWorkspaces();
   }
+
+  // Get recent workspaces
+  @Get('recent')
+  getRecentWorkspaces(@User() user: DecodeUser) {
+    return this.workspacesService.getRecentWorkspaces(user);
+  }
+
   // get specific workspace
   @Get(':wksp_id')
   getWorkspace(@Param('wksp_id') wksp_id: string) {

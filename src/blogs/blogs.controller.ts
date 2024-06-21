@@ -87,6 +87,11 @@ export class BlogsController {
     return this.blogsService.uploadImage(file);
   }
 
+  @Get('/recent')
+  async getRecentBlogs() {
+    return await this.blogsService.getRecentBlogs();
+  }
+
   @Get(':blog_id')
   @ApiParam({
     name: 'blog_id',
