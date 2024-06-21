@@ -21,7 +21,7 @@ import {
   selectBlog,
 } from 'src/lib/constant/blog';
 import { DecodeUser } from 'src/lib/type';
-import { generateUUID } from 'src/lib/utils';
+import { generateUUID, getRandomBlogs } from 'src/lib/utils';
 import { CreateBlogDTO } from './dto/create-blog.dto';
 import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
 import { UpdateBlogDTO } from './dto/update-blog.dto';
@@ -474,9 +474,8 @@ export class BlogsService {
         },
       ],
       relations: relationsBlog,
-      take: 3,
     });
 
-    return relatedBlogs;
+    return getRandomBlogs(relatedBlogs, 3);
   }
 }

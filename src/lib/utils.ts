@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { Blog } from 'src/entity/blog.entity';
 
 type entityName =
   | 'blog'
@@ -33,4 +34,9 @@ export const generateUUID = (
     default:
       return `${ownerID}-${hashMD5(entityName)}-${Date.now()}`;
   }
+};
+
+export const getRandomBlogs = (blogs: Blog[], count: number) => {
+  const shuffled = blogs.sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
 };
