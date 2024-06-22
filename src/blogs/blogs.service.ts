@@ -473,19 +473,19 @@ export class BlogsService {
     if (foundUser.status !== 'fulfilled')
       throw new NotFoundException('User not found');
 
-    const relatedBlogs = await this.blogRepository
-      .createQueryBuilder('blog')
-      .leftJoinAndSelect('blog.tags', 'tags')
-      .leftJoinAndSelect('blog.user', 'user')
-      .where(
-        'blog.blog_id != :blogId AND (tags.tag_id IN (:...tagIds) OR user.user_id = :userId)',
+    const relatedBlogs = await this.blogRepository.find({
+      where: [
         {
-          blogId: blog_id,
-          tagIds: foundBlog.value.tags.map((tag) => tag.tag_id),
-          userId: foundUser.value.user_id,
+          tags: { tag_id: In(foundBlog.value.tags.map((tag) => tag.tag_id)) },
         },
-      )
-      .getMany();
+        {
+          user: {
+            user_id: foundUser.value.user_id,
+          },
+        },
+      ],
+      relations: relationsBlog,
+    });
 
     return getRandomBlogs(relatedBlogs, 3);
   }
