@@ -1,12 +1,13 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, Repository } from 'typeorm';
+import { ILike, In, IsNull, Repository } from 'typeorm';
 
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { BlogImage } from 'src/entity/blog-image.entity';
@@ -488,5 +489,38 @@ export class BlogsService {
     });
 
     return getRandomBlogs(relatedBlogs, 3);
+  }
+  async getWorkspaceList(user: DecodeUser) {
+    try {
+      return await this.workspaceRepository.find({
+        select: {
+          wksp_id: true,
+          wksp_name: true,
+          resources: {
+            resrc_id: true,
+            resrc_name: true,
+            blog: {
+              blog_id: true,
+            },
+          },
+          users: {},
+        },
+        relations: {
+          resources: {
+            blog: true,
+          },
+          users: true,
+        },
+        where: {
+          users: {
+            user: {
+              user_id: user.user_id,
+            },
+          },
+        },
+      });
+    } catch (err) {
+      return new ForbiddenException('Get workspace failed');
+    }
   }
 }
