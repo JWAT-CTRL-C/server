@@ -91,7 +91,11 @@ export class BlogsController {
   async getRecentBlogs() {
     return await this.blogsService.getRecentBlogs();
   }
-
+  @Get('workspace-info')
+  getWorkspaceListByUser(@User() user: DecodeUser) {
+    console.log('find');
+    return this.blogsService.getWorkspaceList(user);
+  }
   @Get(':blog_id')
   @ApiParam({
     name: 'blog_id',
