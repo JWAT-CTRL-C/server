@@ -9,7 +9,7 @@ import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Workspace } from 'src/entity/workspace.entity';
 import { IsNull, Not, Repository } from 'typeorm';
-import { generateUUID } from 'src/lib/utils';
+import { canPassThrough, generateUUID } from 'src/lib/utils';
 import { User } from 'src/entity/user.entity';
 import {
   relationWithResourcesNestBlog,
@@ -71,11 +71,14 @@ export class WorkspacesService {
     updateWorkspaceDTO: UpdateWorkspaceDTO,
     wksp_owner: DecodeUser,
   ) {
-    const condition = ['MA', 'HM'].includes(wksp_owner.role)
-      ? {}
-      : { owner: { user_id: wksp_owner.user_id } };
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id, ...condition },
+      where: {
+        wksp_id,
+        ...canPassThrough<Object>(wksp_owner, {
+          onApprove: {},
+          onDecline: { owner: { user_id: wksp_owner.user_id } },
+        }),
+      },
       relations: { owner: true },
     });
     if (!wksp) throw new ForbiddenException('Update workspace failed');
@@ -165,9 +168,33 @@ export class WorkspacesService {
             blog_img_id: true,
             blog_img_url: true,
           },
+          crd_at: true,
           tags: {
             tag_name: true,
           },
+          user: {
+            user_id: true,
+            usrn: true,
+            fuln: true,
+          },
+        },
+        notifications: {
+          noti_id: true,
+          noti_tle: true,
+          noti_cont: true,
+          crd_at: true,
+          user: {
+            user_id: true,
+            usrn: true,
+            fuln: true,
+            role: true,
+            avatar: true,
+          },
+        },
+      },
+      order: {
+        notifications: {
+          crd_at: 'DESC',
         },
       },
       where: { wksp_id },
@@ -179,7 +206,14 @@ export class WorkspacesService {
         resources: {
           blog: true,
         },
-        blogs: true,
+        blogs: {
+          blogComments: true,
+          blogImage: true,
+          user: true,
+        },
+        notifications: {
+          user: true,
+        },
       },
     });
     if (!result) throw new NotFoundException('Workspace not found');
@@ -256,7 +290,6 @@ export class WorkspacesService {
         .filter((wksp) => !!wksp);
       return new_wksp;
     } catch (err) {
-      console.log(err);
       return new ForbiddenException('Get workspace failed');
     }
   }
@@ -327,6 +360,21 @@ export class WorkspacesService {
   }
   async removeWorkspace(wksp_id: string, wksp_owner: DecodeUser) {
     return await Promise.all([
+      this.userWorkspaceRepository.softDelete({
+        workspace: {
+          wksp_id,
+        },
+      }),
+      this.userWorkspaceRepository.update(
+        {
+          workspace: {
+            wksp_id,
+          },
+        },
+        {
+          deleted_user_id: wksp_owner.user_id,
+        },
+      ),
       this.workspaceRepository.softDelete(wksp_id),
       this.workspaceRepository.update(wksp_id, {
         deleted_user_id: wksp_owner.user_id,
@@ -402,12 +450,15 @@ export class WorkspacesService {
           });
       }
     } else {
-      const condition = ['MA', 'HM'].includes(wksp_owner.role)
-        ? {}
-        : { owner: { user_id: wksp_owner.user_id } };
       // workspace
       const wksp = await this.workspaceRepository.findOne({
-        where: { wksp_id: wksp_id, ...condition },
+        where: {
+          wksp_id: wksp_id,
+          ...canPassThrough<Object>(wksp_owner, {
+            onApprove: {},
+            onDecline: { owner: { user_id: wksp_owner.user_id } },
+          }),
+        },
         relations: { users: { user: true } },
       });
       if (!wksp) throw new ForbiddenException('Workspace not found');
@@ -444,11 +495,14 @@ export class WorkspacesService {
     member_id: number,
     wksp_owner: DecodeUser,
   ) {
-    const condition = ['MA', 'HM'].includes(wksp_owner.role)
-      ? {}
-      : { owner: { user_id: wksp_owner.user_id } };
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id, ...condition },
+      where: {
+        wksp_id: wksp_id,
+        ...canPassThrough<Object>(wksp_owner, {
+          onApprove: {},
+          onDecline: { owner: { user_id: wksp_owner.user_id } },
+        }),
+      },
       relations: { owner: true },
     });
     if (wksp.owner.user_id === member_id)
@@ -471,12 +525,15 @@ export class WorkspacesService {
     data: FranchiseWorkspaceDTO,
     wksp_owner: DecodeUser,
   ) {
-    const condition = ['MA', 'HM'].includes(wksp_owner.role)
-      ? {}
-      : { owner: { user_id: wksp_owner.user_id } };
     // workspace
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id, ...condition },
+      where: {
+        wksp_id: wksp_id,
+        ...canPassThrough<Object>(wksp_owner, {
+          onApprove: {},
+          onDecline: { owner: { user_id: wksp_owner.user_id } },
+        }),
+      },
       relations: { owner: true, users: true },
     });
     if (!wksp) throw new NotFoundException('Workspace not found');
