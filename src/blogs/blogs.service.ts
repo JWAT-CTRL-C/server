@@ -290,12 +290,12 @@ export class BlogsService {
     const skip = (page - 1) * this.LIMIT;
 
     const blogs = await this.blogRepository.find({
+      skip,
+      take: this.LIMIT,
       relations: relationsBlog,
       order: {
         crd_at: 'DESC',
       },
-      skip,
-      take: this.LIMIT,
     });
 
     return blogs;
