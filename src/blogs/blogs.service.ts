@@ -31,6 +31,8 @@ import { BlogRating } from 'src/entity/blog-rating.entity';
 
 @Injectable()
 export class BlogsService {
+  private readonly LIMIT = 12;
+
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     @InjectRepository(Blog) private readonly blogRepository: Repository<Blog>,
@@ -284,10 +286,18 @@ export class BlogsService {
     return { success: true, message: 'Blog removed successfully' };
   }
 
-  async findAll() {
+  async findAll(page = 1) {
+    const skip = (page - 1) * this.LIMIT;
+
     const blogs = await this.blogRepository.find({
       relations: relationsBlog,
+      order: {
+        crd_at: 'DESC',
+      },
+      skip,
+      take: this.LIMIT,
     });
+
     return blogs;
   }
 

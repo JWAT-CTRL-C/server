@@ -93,7 +93,6 @@ export class BlogsController {
   }
   @Get('workspace-info')
   getWorkspaceListByUser(@User() user: DecodeUser) {
-    console.log('find');
     return this.blogsService.getWorkspaceList(user);
   }
   @Get(':blog_id')
@@ -151,8 +150,8 @@ export class BlogsController {
   }
 
   @Get()
-  async findAll() {
-    return await this.blogsService.findAll();
+  async findAll(@Query('page') page: string) {
+    return await this.blogsService.findAll(+page);
   }
 
   @Get('for/user')
