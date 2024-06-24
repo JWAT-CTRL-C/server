@@ -21,8 +21,9 @@ export class Workspace {
   wksp_id: string;
   @Column('varchar', { length: 50, nullable: false })
   wksp_name: string;
-  @Column('varchar', { length: 125 })
+  @Column('text')
   wksp_desc: string;
+  f;
   @DeleteDateColumn()
   deleted_at: Date;
   @Column('integer', { nullable: true })

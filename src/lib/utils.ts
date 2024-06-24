@@ -1,5 +1,6 @@
 import { createHash } from 'crypto';
 import { Blog } from 'src/entity/blog.entity';
+import { DecodeUser } from './type';
 
 type entityName =
   | 'blog'
@@ -39,4 +40,17 @@ export const generateUUID = (
 export const getRandomBlogs = (blogs: Blog[], count: number) => {
   const shuffled = blogs.sort(() => 0.5 - Math.random());
   return shuffled.slice(0, count);
+};
+
+export const canPassThrough = <T = unknown>(
+  user: DecodeUser,
+  {
+    onApprove,
+    onDecline,
+  }: {
+    onApprove: T;
+    onDecline: T;
+  },
+) => {
+  return ['MA', 'HM'].includes(user.role) ? onApprove : onDecline;
 };
