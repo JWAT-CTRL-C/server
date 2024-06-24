@@ -5,6 +5,7 @@ import {
   relationNotification,
   selectNotification,
 } from 'src/lib/constant/notification';
+import { relationWorkspace } from 'src/lib/constant/workspace';
 import { NotificationType } from 'src/lib/type';
 import { generateUUID } from 'src/lib/utils';
 import { In, IsNull, Repository } from 'typeorm';
@@ -13,11 +14,11 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { CreateNotificationDTO } from './dto/create-notification.dto';
-import { relationWorkspace } from 'src/lib/constant/workspace';
+import { CreateSystemNotificationDTO } from './dto/create-system-notification.dto';
 
 @Injectable()
 export class NotificationsService {
-  private readonly take = 20;
+  private readonly LIMIT = 20;
 
   constructor(
     @InjectRepository(Notification)
@@ -82,8 +83,64 @@ export class NotificationsService {
     };
   }
 
+  async createSystemGlobalNotification(
+    socket: Socket,
+    createSystemNotificationDTO: CreateSystemNotificationDTO,
+  ) {
+    const newNotification = this.notificationRepository.create({
+      ...createSystemNotificationDTO,
+      noti_id: generateUUID('notification', 'system'),
+      user: null,
+      workspace: null,
+    });
+
+    await this.notificationRepository.save(newNotification);
+
+    socket.emit(NotificationType.NEW, newNotification);
+
+    return {
+      event: NotificationType.CREATE_GLOBAL,
+      notification: newNotification,
+    };
+  }
+
+  async createSystemWorkspaceNotification(
+    socket: Socket,
+    createSystemNotificationDTO: CreateSystemNotificationDTO,
+  ) {
+    const workspace = await this.workspaceRepository.findOne({
+      where: { wksp_id: createSystemNotificationDTO.wksp_id },
+      relations: relationWorkspace,
+    });
+
+    if (!workspace) {
+      throw new BadRequestException('Workspace not found');
+    }
+
+    const newNotification = this.notificationRepository.create({
+      ...createSystemNotificationDTO,
+      noti_id: generateUUID('notification', 'system'),
+      user: null,
+      workspace,
+    });
+
+    workspace.notifications.push(newNotification);
+
+    await Promise.all([
+      this.notificationRepository.save(newNotification),
+      this.workspaceRepository.save(workspace),
+    ]);
+
+    socket.to(workspace.wksp_id).emit(NotificationType.NEW, newNotification);
+
+    return {
+      event: NotificationType.CREATE_WORKSPACE,
+      notification: newNotification,
+    };
+  }
+
   async getNotifications(user_id: number, page = 0) {
-    const skip = page * this.take || 0;
+    const skip = page * this.LIMIT;
 
     const workspaces = await this.workspaceRepository.find({
       where: { users: { user: { user_id: user_id } } },
@@ -104,7 +161,7 @@ export class NotificationsService {
       relations: relationNotification,
       select: selectNotification,
       skip,
-      take: this.take,
+      take: this.LIMIT,
     });
 
     return notifications;
@@ -115,7 +172,7 @@ export class NotificationsService {
     wksp_id: string,
     page: number,
   ) {
-    const skip = page * this.take || 0;
+    const skip = page * this.LIMIT;
 
     const workspace = await this.workspaceRepository.findOne({
       where: { wksp_id, users: { user: { user_id } } },
@@ -131,7 +188,7 @@ export class NotificationsService {
       relations: relationNotification,
       select: selectNotification,
       skip,
-      take: this.take,
+      take: this.LIMIT,
     });
 
     return notifications;
