@@ -24,6 +24,8 @@ export enum NotificationType {
   SETUP_WORKSPACE = 'setup_workspace',
   CREATE_GLOBAL = 'create_global_notification',
   CREATE_WORKSPACE = 'create_workspace_notification',
+  CREATE_SYSTEM_GLOBAL = 'create_system_global_notification',
+  CREATE_SYSTEM_WORKSPACE = 'create_system_workspace_notification',
   NEW = 'new_notification',
   CREATE_RATING = 'create_rating_notification',
 }

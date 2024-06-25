@@ -3,19 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateResourceDTO } from './dto/create-resource.dto';
-import { Repository } from 'typeorm';
-import { Resource } from 'src/entity/resource.entity';
-import { generateUUID } from 'src/lib/utils';
-import { Workspace } from 'src/entity/workspace.entity';
-import {
-  selectResources,
-  selectWorkspaceResources,
-} from 'src/lib/constant/resource';
-import { UpdateResourceDTO } from './dto/update-resource.dto';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Resource } from 'src/entity/resource.entity';
+import { Workspace } from 'src/entity/workspace.entity';
+import { selectResources } from 'src/lib/constant/resource';
 import { DecodeUser } from 'src/lib/type';
-import { relationWithResources } from 'src/lib/constant/workspace';
+import { canPassThrough, generateUUID } from 'src/lib/utils';
+import { Repository } from 'typeorm';
+import { CreateResourceDTO } from './dto/create-resource.dto';
+import { UpdateResourceDTO } from './dto/update-resource.dto';
 
 @Injectable()
 export class ResourcesService {
@@ -29,8 +25,18 @@ export class ResourcesService {
   // get all resources belong to workspace
   async getWorkspaceResources(wksp_id: string) {
     return await this.resourceRepository.find({
-      select: selectResources,
+      select: {
+        resrc_id: true,
+        resrc_name: true,
+        resrc_url: true,
+        blog: {
+          blog_id: true,
+        },
+      },
       where: { workspace: { wksp_id } },
+      relations: {
+        blog: true,
+      },
     });
   }
   // get one resource belong to workspace
@@ -43,7 +49,8 @@ export class ResourcesService {
         blog: {
           blog_id: true,
           blog_tle: true,
-          blogRatings: true,
+          crd_at: true,
+          blog_cont: true,
           blogImage: {
             blog_img_id: true,
             blog_img_url: true,
@@ -66,7 +73,14 @@ export class ResourcesService {
         },
       },
       where: { workspace: { wksp_id }, resrc_id },
-      relations: { workspace: true, blog: true },
+      relations: {
+        workspace: true,
+        blog: {
+          tags: true,
+          user: true,
+          blogImage: true,
+        },
+      },
     });
     if (!result) throw new NotFoundException('Resource not found');
     const resource = {
@@ -81,11 +95,14 @@ export class ResourcesService {
     resource: CreateResourceDTO,
     user: DecodeUser,
   ) {
-    const condition = ['MA', 'HM'].includes(user.role)
-      ? {}
-      : { owner: { user_id: user.user_id } };
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id, ...condition },
+      where: {
+        wksp_id: wksp_id,
+        ...canPassThrough<Object>(user, {
+          onApprove: {},
+          onDecline: { owner: { user_id: user.user_id } },
+        }),
+      },
       relations: { resources: true },
     });
     if (!wksp) {
