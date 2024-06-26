@@ -23,7 +23,6 @@ export class Workspace {
   wksp_name: string;
   @Column('text')
   wksp_desc: string;
-  f;
   @DeleteDateColumn()
   deleted_at: Date;
   @Column('integer', { nullable: true })

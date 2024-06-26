@@ -28,6 +28,8 @@ export class UsersService {
     private cloudinaryService: CloudinaryService,
   ) {}
 
+  private readonly LIMIT = 10;
+
   async createUser(createUserDTO: CreateUserDTO, user: DecodeUser) {
     const foundUser = await this.userRepository.findOne({
       where: { usrn: createUserDTO.usrn },
@@ -147,11 +149,13 @@ export class UsersService {
 
     return { success: true, message: 'User deleted successfully' };
   }
-  async getAllUsers() {
-    const users = await this.userRepository.find({
+  async getAllUsers(page: number) {
+    const skip = (page - 1) * this.LIMIT;
+
+    return await this.userRepository.find({
+      skip,
+      take: this.LIMIT,
       select: selectUser,
     });
-
-    return users;
   }
 }

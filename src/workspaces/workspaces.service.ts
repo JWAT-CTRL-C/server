@@ -1,24 +1,23 @@
+import { User } from 'src/entity/user.entity';
+import { UserWorkspace } from 'src/entity/user_workspace.entity';
+import { Workspace } from 'src/entity/workspace.entity';
+import { selectUserRelation } from 'src/lib/constant/workspace';
+import { DecodeUser } from 'src/lib/type';
+import { canPassThrough, generateUUID } from 'src/lib/utils';
+import { IsNull, Not, Repository } from 'typeorm';
+
 import {
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
-import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Workspace } from 'src/entity/workspace.entity';
-import { IsNull, Not, Repository } from 'typeorm';
-import { canPassThrough, generateUUID } from 'src/lib/utils';
-import { User } from 'src/entity/user.entity';
-import {
-  relationWithResourcesNestBlog,
-  selectUserRelation,
-} from 'src/lib/constant/workspace';
+
 import { AddMemberDTO } from './dto/add-member.dto';
+import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
 import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
-import { DecodeUser } from 'src/lib/type';
-import { UserWorkspace } from 'src/entity/user_workspace.entity';
+import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 
 @Injectable()
 export class WorkspacesService {
@@ -74,7 +73,7 @@ export class WorkspacesService {
     const wksp = await this.workspaceRepository.findOne({
       where: {
         wksp_id,
-        ...canPassThrough<Object>(wksp_owner, {
+        ...canPassThrough<object>(wksp_owner, {
           onApprove: {},
           onDecline: { owner: { user_id: wksp_owner.user_id } },
         }),
@@ -90,7 +89,7 @@ export class WorkspacesService {
       .then(() => {
         return { success: true, message: 'Workspace updated successfully' };
       })
-      .catch((err) => {
+      .catch(() => {
         return new ForbiddenException('Update workspace failed');
       });
   }
@@ -383,7 +382,7 @@ export class WorkspacesService {
       .then(() => {
         return { success: true, message: 'Workspace deleted successfully' };
       })
-      .catch((err) => {
+      .catch(() => {
         return new ForbiddenException('Delete workspace failed');
       });
   }
@@ -445,7 +444,7 @@ export class WorkspacesService {
           .then(() => {
             return { success: true, message: 'Member added successfully' };
           })
-          .catch((err) => {
+          .catch(() => {
             return new ForbiddenException('Add member failed');
           });
       }
@@ -454,7 +453,7 @@ export class WorkspacesService {
       const wksp = await this.workspaceRepository.findOne({
         where: {
           wksp_id: wksp_id,
-          ...canPassThrough<Object>(wksp_owner, {
+          ...canPassThrough<object>(wksp_owner, {
             onApprove: {},
             onDecline: { owner: { user_id: wksp_owner.user_id } },
           }),
@@ -485,7 +484,7 @@ export class WorkspacesService {
         .then(() => {
           return { success: true, message: 'Member added successfully' };
         })
-        .catch((err) => {
+        .catch(() => {
           return new ForbiddenException('Add member failed');
         });
     }
@@ -498,7 +497,7 @@ export class WorkspacesService {
     const wksp = await this.workspaceRepository.findOne({
       where: {
         wksp_id: wksp_id,
-        ...canPassThrough<Object>(wksp_owner, {
+        ...canPassThrough<object>(wksp_owner, {
           onApprove: {},
           onDecline: { owner: { user_id: wksp_owner.user_id } },
         }),
@@ -529,7 +528,7 @@ export class WorkspacesService {
     const wksp = await this.workspaceRepository.findOne({
       where: {
         wksp_id: wksp_id,
-        ...canPassThrough<Object>(wksp_owner, {
+        ...canPassThrough<object>(wksp_owner, {
           onApprove: {},
           onDecline: { owner: { user_id: wksp_owner.user_id } },
         }),
@@ -574,27 +573,8 @@ export class WorkspacesService {
           message: 'Franchise workspace updated successfully',
         };
       })
-      .catch((err) => {
+      .catch(() => {
         return new ForbiddenException('Franchise workspace failed');
       });
   }
-  // async addResource(resource: AddResourceDTO) {
-  //   try {
-  //     const rsrc = this.resouceRepository.create({
-  //       resrc_id: generateUUID('resource', resource.wksp_id),
-  //       resrc_name: resource.resrc_name,
-  //       resrc_url: resource.resrc_url,
-  //     });
-  //     await this.resouceRepository.save(rsrc);
-  //     return await this.workspaceRepository
-  //       .update(resource.wksp_id, {
-  //         resources: [rsrc],
-  //       })
-  //       .then(() => {
-  //         return { success: true, message: 'Resource added successfully' };
-  //       });
-  //   } catch (err) {
-  //     throw new ForbiddenException('Add resource failed');
-  //   }
-  // }
 }
