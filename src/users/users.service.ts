@@ -152,10 +152,16 @@ export class UsersService {
   async getAllUsers(page: number) {
     const skip = (page - 1) * this.LIMIT;
 
-    return await this.userRepository.find({
+    const [users, count] = await this.userRepository.findAndCount({
       skip,
       take: this.LIMIT,
       select: selectUser,
     });
+
+    return {
+      data: users,
+      currentPage: page,
+      totalPages: Math.ceil(count / this.LIMIT),
+    };
   }
 }
