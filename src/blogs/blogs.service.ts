@@ -31,7 +31,7 @@ import { BlogRating } from 'src/entity/blog-rating.entity';
 
 @Injectable()
 export class BlogsService {
-  private readonly LIMIT = 3;
+  private readonly LIMIT = 12;
 
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
@@ -555,5 +555,26 @@ export class BlogsService {
     } catch (err) {
       return new ForbiddenException('Get workspace failed');
     }
+  }
+
+  async getBlogsForAdmin(page: number, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    const skip = (page - 1) * this.LIMIT;
+
+    const [blogs, totalBlogs] = await this.blogRepository.findAndCount({
+      relations: relationsBlog,
+      select: selectBlog,
+      skip,
+      take: this.LIMIT,
+    });
+    const totalPages = Math.ceil(totalBlogs / this.LIMIT);
+    return {
+      data: blogs,
+      currentPage: page,
+      totalPages,
+    };
   }
 }

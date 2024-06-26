@@ -28,6 +28,7 @@ import { UpdateBlogDTO } from './dto/update-blog.dto';
 import { User } from 'src/decorator/user.decorator';
 import { DecodeUser } from 'src/lib/type';
 import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
+import { Roles } from 'src/decorator/roles.decorator';
 
 @Controller('blogs')
 @ApiBearerAuth()
@@ -267,5 +268,14 @@ export class BlogsController {
     @Param('blog_id') blog_id: string,
   ) {
     return await this.blogsService.relatedBlogs(blog_id, user);
+  }
+
+  @Roles('MA')
+  @Get('for/master-admin')
+  async findAllBlogsForMasterAdmin(
+    @User() user: DecodeUser,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+  ) {
+    return await this.blogsService.getBlogsForAdmin(page, user);
   }
 }
