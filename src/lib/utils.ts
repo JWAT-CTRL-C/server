@@ -54,3 +54,13 @@ export const canPassThrough = <T = unknown>(
 ) => {
   return ['MA', 'HM'].includes(user.role) ? onApprove : onDecline;
 };
+
+export const removeFalsyFields = <T>(obj: object | T[]) => {
+  if (Array.isArray(obj)) return obj.filter(Boolean);
+
+  Object.keys(obj).forEach((k) => {
+    if (!obj[k] || !obj[k]?.length) delete obj[k];
+  });
+
+  return obj;
+};

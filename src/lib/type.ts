@@ -28,4 +28,6 @@ export enum NotificationType {
   CREATE_SYSTEM_WORKSPACE = 'create_system_workspace_notification',
   NEW = 'new_notification',
   CREATE_RATING = 'create_rating_notification',
+  SUCCESS = 'success_notification',
+  ERROR = 'error_notification',
 }
