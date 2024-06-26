@@ -44,7 +44,6 @@ export default [
 
       parserOptions: {
         project: 'tsconfig.json',
-        tsconfigRootDir: 'D:\\Linh-tinh\\VSCode\\CLV-Project\\server',
       },
     },
 
