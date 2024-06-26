@@ -10,6 +10,8 @@ import {
   UploadedFile,
   Query,
   Put,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -155,8 +157,16 @@ export class BlogsController {
   }
 
   @Get('for/user')
-  async findAllByUserId(@User() user: DecodeUser) {
-    return await this.blogsService.findAllByUserId(user);
+  async findAllByUserId(
+    @User() user: DecodeUser,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('blog_tle') blog_tle: string,
+  ) {
+    return await this.blogsService.filterBlogByTitleForCurrentUser(
+      user,
+      blog_tle,
+      page,
+    );
   }
 
   @Get('filter/title')
@@ -168,10 +178,12 @@ export class BlogsController {
   async filterBlogByTitleForCurrentUser(
     @User() user: DecodeUser,
     @Query('blog_tle') blog_tle: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
   ) {
     return await this.blogsService.filterBlogByTitleForCurrentUser(
       user,
       blog_tle,
+      page,
     );
   }
 
