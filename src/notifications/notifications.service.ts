@@ -7,7 +7,7 @@ import {
 } from 'src/lib/constant/notification';
 import { relationWorkspace } from 'src/lib/constant/workspace';
 import { NotificationType } from 'src/lib/type';
-import { generateUUID } from 'src/lib/utils';
+import { generateUUID, removeFalsyFields } from 'src/lib/utils';
 import { In, IsNull, Repository } from 'typeorm';
 
 import { BadRequestException, Injectable } from '@nestjs/common';
@@ -192,7 +192,7 @@ export class NotificationsService {
     }
   }
 
-  async getNotifications(user_id: number, page = 0) {
+  async getNotifications(user_id: number, page = 1) {
     const skip = page * this.LIMIT;
 
     const workspaces = await this.workspaceRepository.find({
@@ -203,11 +203,13 @@ export class NotificationsService {
       where: [
         {
           workspace: IsNull(),
+          userNotificationRead: [{ user_id: user_id }, { is_read: IsNull() }],
         },
         {
           workspace: {
             wksp_id: In(workspaces.map((wksp) => wksp.wksp_id)),
           },
+          userNotificationRead: [{ user_id: user_id }, { is_read: IsNull() }],
         },
       ],
       order: { crd_at: 'DESC' },
@@ -217,7 +219,17 @@ export class NotificationsService {
       take: this.LIMIT,
     });
 
-    return notifications;
+    const formated_notifications = notifications.map((notification) => {
+      return {
+        ...notification,
+        userNotificationRead: undefined,
+        is_read: notification.userNotificationRead.length
+          ? notification.userNotificationRead[0].is_read
+          : false,
+      };
+    });
+
+    return removeFalsyFields(formated_notifications);
   }
 
   async getWorkspaceNotifications(
@@ -236,7 +248,10 @@ export class NotificationsService {
     }
 
     const notifications = await this.notificationRepository.find({
-      where: { workspace: { wksp_id: workspace.wksp_id } },
+      where: {
+        workspace: { wksp_id: workspace.wksp_id },
+        userNotificationRead: [{ user_id: user_id }, { is_read: IsNull() }],
+      },
       order: { crd_at: 'DESC' },
       relations: relationNotification,
       select: selectNotification,
@@ -244,6 +259,15 @@ export class NotificationsService {
       take: this.LIMIT,
     });
 
-    return notifications;
+    const formated_notifications = notifications.map((notification) => {
+      return {
+        ...notification,
+        userNotificationRead: undefined,
+        is_read: notification.userNotificationRead.length
+          ? notification.userNotificationRead[0].is_read
+          : false,
+      };
+    });
+    return removeFalsyFields(formated_notifications);
   }
 }
