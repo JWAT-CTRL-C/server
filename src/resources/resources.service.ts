@@ -6,7 +6,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Resource } from 'src/entity/resource.entity';
 import { Workspace } from 'src/entity/workspace.entity';
-import { selectResources } from 'src/lib/constant/resource';
 import { DecodeUser } from 'src/lib/type';
 import { canPassThrough, generateUUID } from 'src/lib/utils';
 import { Repository } from 'typeorm';
@@ -98,7 +97,7 @@ export class ResourcesService {
     const wksp = await this.workspaceRepository.findOne({
       where: {
         wksp_id: wksp_id,
-        ...canPassThrough<Object>(user, {
+        ...canPassThrough<object>(user, {
           onApprove: {},
           onDecline: { owner: { user_id: user.user_id } },
         }),
@@ -108,16 +107,16 @@ export class ResourcesService {
     if (!wksp) {
       throw new NotFoundException('Workspace not found');
     }
-    const rsrc = this.resourceRepository.create({
+    const resrc = this.resourceRepository.create({
       resrc_id: generateUUID('resource', wksp_id),
       resrc_name: resource.resrc_name,
       resrc_url: resource.resrc_url,
       crd_user_id: user.user_id,
       workspace: wksp,
     });
-    wksp.resources.push(rsrc);
+    wksp.resources.push(resrc);
     return await Promise.all([
-      this.resourceRepository.save(rsrc),
+      this.resourceRepository.save(resrc),
       this.workspaceRepository.save(wksp),
     ])
       .then(() => {
@@ -135,31 +134,31 @@ export class ResourcesService {
     resrc_id: string,
     user: DecodeUser,
   ) {
-    const rsrc = await this.resourceRepository.findOne({
+    const resrc = await this.resourceRepository.findOne({
       where: { resrc_id, workspace: { wksp_id } },
       relations: { workspace: true },
     });
-    if (!rsrc) {
+    if (!resrc) {
       throw new NotFoundException('Resource not found');
     }
     await this.resourceRepository.upsert(
-      { ...rsrc, ...resource, upd_user_id: user.user_id },
+      { ...resrc, ...resource, upd_user_id: user.user_id },
       ['resrc_id'],
     );
     return { success: true, message: 'Resource updated successfully' };
   }
   // remove resource
   async deleteResource(wksp_id: string, resrc_id: string, user: DecodeUser) {
-    const rsrc = await this.resourceRepository.findOne({
+    const resrc = await this.resourceRepository.findOne({
       where: { resrc_id, workspace: { wksp_id } },
       relations: { workspace: true },
     });
-    if (!rsrc) {
+    if (!resrc) {
       throw new NotFoundException('Resource not found');
     }
-    rsrc.deleted_user_id = user.user_id;
+    resrc.deleted_user_id = user.user_id;
     return await Promise.all([
-      this.resourceRepository.save(rsrc),
+      this.resourceRepository.save(resrc),
       this.resourceRepository.softDelete(resrc_id),
     ])
       .then(() => {

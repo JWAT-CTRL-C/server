@@ -11,6 +11,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -67,8 +68,8 @@ export class UsersController {
 
   @Get('all')
   @Roles('HM', 'MA', 'PM')
-  async findAll() {
-    return this.usersService.getAllUsers();
+  async findAll(@Query('page') page: string) {
+    return this.usersService.getAllUsers(+page);
   }
 
   @Get('me')
