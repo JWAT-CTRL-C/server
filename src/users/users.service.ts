@@ -10,7 +10,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -60,7 +60,8 @@ export class UsersService {
 
     const isMatch = await bcrypt.compare(changePassDTO.oldPass, foundUser.pass);
 
-    if (!isMatch) throw new UnauthorizedException('Old password is incorrect');
+    if (!isMatch)
+      throw new UnprocessableEntityException('Old password is incorrect');
 
     const hashedPassword = await bcrypt.hash(changePassDTO.newPass, saltRounds);
 
@@ -149,7 +150,16 @@ export class UsersService {
 
     return { success: true, message: 'User deleted successfully' };
   }
-  async getAllUsers(page: number) {
+
+  async getAllUsers() {
+    const users = await this.userRepository.find({
+      select: selectUser,
+    });
+
+    return users;
+  }
+
+  async getAllUsersAdmin(page: number) {
     const skip = (page - 1) * this.LIMIT;
 
     const [users, count] = await this.userRepository.findAndCount({
