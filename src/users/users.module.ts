@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
-import { UserNotificationRead } from 'src/entity/user_nofitication_read.entity';
+import { UserNotificationRead } from 'src/entity/user_notification_read.entity';
 import { Notification } from 'src/entity/notification.entity';
 
 @Module({
