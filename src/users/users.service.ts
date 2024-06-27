@@ -166,6 +166,10 @@ export class UsersService {
       skip,
       take: this.LIMIT,
       select: selectUser,
+      withDeleted: true,
+      order: {
+        user_id: 'ASC',
+      },
     });
 
     return {
@@ -173,5 +177,17 @@ export class UsersService {
       currentPage: page,
       totalPages: Math.ceil(count / this.LIMIT),
     };
+  }
+
+  async restoreUser(user_id: number) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id },
+      withDeleted: true,
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    await this.userRepository.restore({ user_id });
+
+    return { success: true, message: 'User Restore successfully' };
   }
 }

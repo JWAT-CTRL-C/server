@@ -178,4 +178,15 @@ export class UsersController {
   async delete(@Param('id') user_id: number, @User() user: DecodeUser) {
     return this.usersService.removeUser(user_id, user);
   }
+
+  @Roles('HM', 'MA')
+  @Patch(':id/restore')
+  // @ApiParam({
+  //   name: 'id',
+  //   required: true,
+  //   type: 'number',
+  // })
+  async restoreUser(@Param('id') id: number) {
+    await this.usersService.restoreUser(id);
+  }
 }
