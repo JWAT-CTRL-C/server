@@ -219,7 +219,7 @@ export class NotificationsService {
       take: this.LIMIT,
     });
 
-    const formated_notifications = notifications.map((notification) => {
+    const formatted_notifications = notifications.map((notification) => {
       return {
         ...notification,
         userNotificationRead: undefined,
@@ -229,7 +229,7 @@ export class NotificationsService {
       };
     });
 
-    return removeFalsyFields(formated_notifications);
+    return removeFalsyFields(formatted_notifications);
   }
 
   async getWorkspaceNotifications(user_id: number, wksp_id: string, page = 1) {
@@ -255,7 +255,7 @@ export class NotificationsService {
       take: this.LIMIT,
     });
 
-    const formated_notifications = notifications.map((notification) => {
+    const formatted_notifications = notifications.map((notification) => {
       return {
         ...notification,
         userNotificationRead: undefined,
@@ -264,7 +264,7 @@ export class NotificationsService {
           : false,
       };
     });
-    return removeFalsyFields(formated_notifications);
+    return removeFalsyFields(formatted_notifications);
   }
 
   async getUnreadNotificationAmount(user_id: number) {
