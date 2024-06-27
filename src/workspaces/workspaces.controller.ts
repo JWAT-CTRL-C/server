@@ -8,6 +8,8 @@ import {
   Delete,
   UseGuards,
   ParseIntPipe,
+  Query,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
@@ -119,5 +121,13 @@ export class WorkspacesController {
     @User() user: DecodeUser,
   ) {
     return this.workspacesService.franchiseWorkspace(wksp_id, data, user);
+  }
+  @Roles('MA')
+  @Get('for/master-admin')
+  getWorkspacesForMasterAdmin(
+    @User() user: DecodeUser,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+  ) {
+    return this.workspacesService.getWorkspacesForMasterAdmin(page, user);
   }
 }

@@ -179,6 +179,16 @@ export class UsersController {
     return this.usersService.removeUser(user_id, user);
   }
 
+  @Roles('HM', 'MA')
+  @Patch(':id/restore')
+  // @ApiParam({
+  //   name: 'id',
+  //   required: true,
+  //   type: 'number',
+  // })
+  async restoreUser(@Param('id') id: number) {
+    await this.usersService.restoreUser(id);
+  }
   @Post(':noti_id/seen')
   async seenNotification(
     @Param('noti_id') noti_id: string,

@@ -147,6 +147,13 @@ export class UsersService {
   }
 
   async removeUser(user_id: number, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id },
+      withDeleted: true,
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    if (foundUser.deleted_at)
+      throw new BadRequestException('User already deleted');
     await Promise.all([
       this.userRepository.softDelete({ user_id }),
       this.userRepository.update(
@@ -173,6 +180,10 @@ export class UsersService {
       skip,
       take: this.LIMIT,
       select: selectUser,
+      withDeleted: true,
+      order: {
+        user_id: 'ASC',
+      },
     });
 
     return {
@@ -180,6 +191,20 @@ export class UsersService {
       currentPage: page,
       totalPages: Math.ceil(count / this.LIMIT),
     };
+  }
+
+  async restoreUser(user_id: number) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id },
+      withDeleted: true,
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    if (!foundUser.deleted_at)
+      throw new BadRequestException('User already restored');
+
+    await this.userRepository.restore({ user_id });
+
+    return { success: true, message: 'User Restore successfully' };
   }
   async seenNotification(noti_id: string, user: DecodeUser) {
     const foundUser = await this.userRepository.findOneBy({
