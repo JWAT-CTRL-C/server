@@ -117,15 +117,21 @@ export class WorkspacesService {
         } else {
           return {
             ...wksp,
-            users: removeFalsyFields(wksp.users).map(({ user }) => ({
-              user_id: user.user_id,
-              usrn: user.usrn,
-              avatar: user.avatar,
-              email: user.email,
-              fuln: user.fuln,
-              phone: user.phone,
-              role: user.role,
-            })),
+            users: removeFalsyFields(
+              wksp.users.map(({ user }) =>
+                user
+                  ? {
+                      user_id: user.user_id,
+                      usrn: user.usrn,
+                      avatar: user.avatar,
+                      email: user.email,
+                      fuln: user.fuln,
+                      phone: user.phone,
+                      role: user.role,
+                    }
+                  : null,
+              ),
+            ),
           };
         }
       });
@@ -218,15 +224,21 @@ export class WorkspacesService {
     if (!result) throw new NotFoundException('Workspace not found');
     const workspace = {
       ...result,
-      users: result.users.map(({ user }) => ({
-        user_id: user.user_id,
-        usrn: user.usrn,
-        avatar: user.avatar,
-        email: user.email,
-        fuln: user.fuln,
-        phone: user.phone,
-        role: user.role,
-      })),
+      users: removeFalsyFields(
+        result.users.map(({ user }) =>
+          user
+            ? {
+                user_id: user.user_id,
+                usrn: user.usrn,
+                avatar: user.avatar,
+                email: user.email,
+                fuln: user.fuln,
+                phone: user.phone,
+                role: user.role,
+              }
+            : null,
+        ),
+      ),
     };
     return workspace;
     // .then((workspace) => workspace)
@@ -263,21 +275,29 @@ export class WorkspacesService {
             return wksp;
           } else {
             if (
-              wksp.users.some((u) => u.user.user_id === user.user_id) ||
+              wksp.users.some(
+                (u) => u.user && u.user.user_id === user.user_id,
+              ) ||
               user.role === 'MA' ||
               user.role === 'HM'
             ) {
               return {
                 ...wksp,
-                users: removeFalsyFields(wksp.users).map(({ user }) => ({
-                  user_id: user.user_id,
-                  usrn: user.usrn,
-                  avatar: user.avatar,
-                  email: user.email,
-                  fuln: user.fuln,
-                  phone: user.phone,
-                  role: user.role,
-                })),
+                users: removeFalsyFields(
+                  wksp.users.map(({ user }) =>
+                    user
+                      ? {
+                          user_id: user.user_id,
+                          usrn: user.usrn,
+                          avatar: user.avatar,
+                          email: user.email,
+                          fuln: user.fuln,
+                          phone: user.phone,
+                          role: user.role,
+                        }
+                      : null,
+                  ),
+                ),
               };
             }
           }
@@ -285,6 +305,7 @@ export class WorkspacesService {
         .filter((wksp) => !!wksp);
       return new_wksp;
     } catch (err) {
+      console.log(err);
       return new ForbiddenException('Get workspace failed');
     }
   }
@@ -323,7 +344,7 @@ export class WorkspacesService {
           ) {
             return {
               ...wksp,
-              users: removeFalsyFields(wksp.users).map(({ user, upd_at }) => ({
+              users: wksp.users.map(({ user, upd_at }) => ({
                 user_id: user.user_id,
                 usrn: user.usrn,
                 avatar: user.avatar,
@@ -401,15 +422,21 @@ export class WorkspacesService {
     });
     const members = {
       ...result,
-      users: result.users.map(({ user }) => ({
-        user_id: user.user_id,
-        usrn: user.usrn,
-        avatar: user.avatar,
-        email: user.email,
-        fuln: user.fuln,
-        phone: user.phone,
-        role: user.role,
-      })),
+      users: removeFalsyFields(
+        result.users.map(({ user }) =>
+          user
+            ? {
+                user_id: user.user_id,
+                usrn: user.usrn,
+                avatar: user.avatar,
+                email: user.email,
+                fuln: user.fuln,
+                phone: user.phone,
+                role: user.role,
+              }
+            : null,
+        ),
+      ),
     };
     return members;
   }
