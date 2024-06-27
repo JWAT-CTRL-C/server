@@ -21,6 +21,8 @@ import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 
 @Injectable()
 export class WorkspacesService {
+  private readonly LIMIT = 12;
+
   constructor(
     @InjectRepository(Workspace)
     private workspaceRepository: Repository<Workspace>,
@@ -578,5 +580,38 @@ export class WorkspacesService {
       .catch(() => {
         return new ForbiddenException('Franchise workspace failed');
       });
+  }
+
+  async getWorkspacesForMasterAdmin(page: number, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    const skip = (page - 1) * this.LIMIT;
+    const [workspaces, totalWorkspaces] =
+      await this.workspaceRepository.findAndCount({
+        select: {
+          wksp_id: true,
+          wksp_name: true,
+          wksp_desc: true,
+          owner: selectUserRelation,
+          resources: true,
+          crd_at: true,
+          users: true,
+        },
+        relations: {
+          owner: true,
+          resources: true,
+          users: true,
+        },
+        skip,
+        take: this.LIMIT,
+      });
+    const totalPages = Math.ceil(totalWorkspaces / this.LIMIT);
+    return {
+      data: workspaces,
+      currentPage: page,
+      totalPages,
+    };
   }
 }

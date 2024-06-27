@@ -312,32 +312,55 @@ export class BlogsService {
     return blogs;
   }
 
-  async findAllByUserId(user: DecodeUser) {
+  async findAllByUserId(user: DecodeUser, page: number) {
     const foundUser = await this.userRepository.findOne({
       where: { user_id: user.user_id },
     });
     if (!foundUser) throw new NotFoundException('User not found');
-    const blogs = await this.blogRepository.find({
+    const skip = (page - 1) * this.LIMIT;
+
+    const [blogs, totalBlogs] = await this.blogRepository.findAndCount({
       relations: relationsBlog,
       where: { user: { user_id: user.user_id } },
+      skip,
+      take: this.LIMIT,
     });
-    return blogs;
+
+    const totalPages = Math.ceil(totalBlogs / this.LIMIT);
+    return {
+      data: blogs,
+      currentPage: page,
+      totalPages,
+    };
   }
 
-  async filterBlogByTitleForCurrentUser(user: DecodeUser, blog_tle: string) {
+  async filterBlogByTitleForCurrentUser(
+    user: DecodeUser,
+    blog_tle: string,
+    page: number,
+  ) {
     const foundUser = await this.userRepository.findOne({
       where: { user_id: user.user_id },
     });
     if (!foundUser) throw new NotFoundException('User not found');
-    const foundBlogs = await this.blogRepository.find({
+    const skip = (page - 1) * this.LIMIT;
+
+    const [blogs, totalBlogs] = await this.blogRepository.findAndCount({
       where: {
         user: { user_id: user.user_id },
         blog_tle: ILike(`%${blog_tle}%`),
       },
       relations: relationsBlog,
       select: selectBlog,
+      skip,
+      take: this.LIMIT,
     });
-    return foundBlogs;
+    const totalPages = Math.ceil(totalBlogs / this.LIMIT);
+    return {
+      data: blogs,
+      currentPage: page,
+      totalPages,
+    };
   }
 
   async createComment(
@@ -532,5 +555,26 @@ export class BlogsService {
     } catch (err) {
       return new ForbiddenException('Get workspace failed');
     }
+  }
+
+  async getBlogsForAdmin(page: number, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    const skip = (page - 1) * this.LIMIT;
+
+    const [blogs, totalBlogs] = await this.blogRepository.findAndCount({
+      relations: relationsBlog,
+      select: selectBlog,
+      skip,
+      take: this.LIMIT,
+    });
+    const totalPages = Math.ceil(totalBlogs / this.LIMIT);
+    return {
+      data: blogs,
+      currentPage: page,
+      totalPages,
+    };
   }
 }
