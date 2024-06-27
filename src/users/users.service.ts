@@ -140,6 +140,13 @@ export class UsersService {
   }
 
   async removeUser(user_id: number, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id },
+      withDeleted: true,
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    if (foundUser.deleted_at)
+      throw new BadRequestException('User already deleted');
     await Promise.all([
       this.userRepository.softDelete({ user_id }),
       this.userRepository.update(
@@ -185,6 +192,8 @@ export class UsersService {
       withDeleted: true,
     });
     if (!foundUser) throw new NotFoundException('User not found');
+    if (!foundUser.deleted_at)
+      throw new BadRequestException('User already restored');
 
     await this.userRepository.restore({ user_id });
 
