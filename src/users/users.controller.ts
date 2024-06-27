@@ -189,4 +189,11 @@ export class UsersController {
   async restoreUser(@Param('id') id: number) {
     await this.usersService.restoreUser(id);
   }
+  @Post(':noti_id/seen')
+  async seenNotification(
+    @Param('noti_id') noti_id: string,
+    @User() user: DecodeUser,
+  ) {
+    return this.usersService.seenNotification(noti_id, user);
+  }
 }

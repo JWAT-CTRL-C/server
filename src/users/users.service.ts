@@ -9,6 +9,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -20,11 +21,17 @@ import { UpdateProfileDTO } from './dto/update-profile.dto';
 import { DecodeUser } from 'src/lib/type';
 import { selectUser } from 'src/lib/constant/user';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Notification } from 'src/entity/notification.entity';
+import { UserNotificationRead } from 'src/entity/user_nofitication_read.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(Notification)
+    private notificationRepository: Repository<Notification>,
+    @InjectRepository(UserNotificationRead)
+    private userNotificationReadRepository: Repository<UserNotificationRead>,
     private cloudinaryService: CloudinaryService,
   ) {}
 
@@ -198,5 +205,41 @@ export class UsersService {
     await this.userRepository.restore({ user_id });
 
     return { success: true, message: 'User Restore successfully' };
+  }
+  async seenNotification(noti_id: string, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOneBy({
+      user_id: user.user_id,
+    });
+
+    if (!foundUser) throw new NotFoundException('User not found');
+    const noti = await this.notificationRepository.findOneBy({
+      noti_id,
+    });
+
+    if (!noti) throw new NotFoundException('Notification not found');
+    return await this.userNotificationReadRepository
+      .findOne({
+        where: {
+          noti_id,
+          user_id: foundUser.user_id,
+          is_read: true,
+        },
+      })
+      .then(async (res) => {
+        if (!res) {
+          const seenNotify = this.userNotificationReadRepository.create({
+            noti_id,
+            user_id: foundUser.user_id,
+          });
+          return await this.userNotificationReadRepository
+            .save(seenNotify)
+            .then(() => {
+              return { success: true, message: 'success' };
+            })
+            .catch(() => {
+              throw new InternalServerErrorException('Something went wrong');
+            });
+        }
+      });
   }
 }

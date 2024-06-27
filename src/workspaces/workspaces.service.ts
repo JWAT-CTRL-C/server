@@ -3,7 +3,7 @@ import { UserWorkspace } from 'src/entity/user_workspace.entity';
 import { Workspace } from 'src/entity/workspace.entity';
 import { selectUserRelation } from 'src/lib/constant/workspace';
 import { DecodeUser } from 'src/lib/type';
-import { canPassThrough, generateUUID } from 'src/lib/utils';
+import { canPassThrough, generateUUID, removeFalsyFields } from 'src/lib/utils';
 import { IsNull, Not, Repository } from 'typeorm';
 
 import {
@@ -119,15 +119,21 @@ export class WorkspacesService {
         } else {
           return {
             ...wksp,
-            users: wksp.users.map(({ user }) => ({
-              user_id: user.user_id,
-              usrn: user.usrn,
-              avatar: user.avatar,
-              email: user.email,
-              fuln: user.fuln,
-              phone: user.phone,
-              role: user.role,
-            })),
+            users: removeFalsyFields(
+              wksp.users.map(({ user }) =>
+                user
+                  ? {
+                      user_id: user.user_id,
+                      usrn: user.usrn,
+                      avatar: user.avatar,
+                      email: user.email,
+                      fuln: user.fuln,
+                      phone: user.phone,
+                      role: user.role,
+                    }
+                  : null,
+              ),
+            ),
           };
         }
       });
@@ -179,24 +185,6 @@ export class WorkspacesService {
             fuln: true,
           },
         },
-        notifications: {
-          noti_id: true,
-          noti_tle: true,
-          noti_cont: true,
-          crd_at: true,
-          user: {
-            user_id: true,
-            usrn: true,
-            fuln: true,
-            role: true,
-            avatar: true,
-          },
-        },
-      },
-      order: {
-        notifications: {
-          crd_at: 'DESC',
-        },
       },
       where: { wksp_id },
       relations: {
@@ -212,23 +200,26 @@ export class WorkspacesService {
           blogImage: true,
           user: true,
         },
-        notifications: {
-          user: true,
-        },
       },
     });
     if (!result) throw new NotFoundException('Workspace not found');
     const workspace = {
       ...result,
-      users: result.users.map(({ user }) => ({
-        user_id: user.user_id,
-        usrn: user.usrn,
-        avatar: user.avatar,
-        email: user.email,
-        fuln: user.fuln,
-        phone: user.phone,
-        role: user.role,
-      })),
+      users: removeFalsyFields(
+        result.users.map(({ user }) =>
+          user
+            ? {
+                user_id: user.user_id,
+                usrn: user.usrn,
+                avatar: user.avatar,
+                email: user.email,
+                fuln: user.fuln,
+                phone: user.phone,
+                role: user.role,
+              }
+            : null,
+        ),
+      ),
     };
     return workspace;
     // .then((workspace) => workspace)
@@ -256,10 +247,6 @@ export class WorkspacesService {
           owner: true,
         },
         where: {
-          users: {
-            deleted_at: IsNull(),
-            deleted_user_id: IsNull(),
-          },
           owner: Not(IsNull()),
         },
       });
@@ -269,21 +256,29 @@ export class WorkspacesService {
             return wksp;
           } else {
             if (
-              wksp.users.some((u) => u.user.user_id === user.user_id) ||
+              wksp.users.some(
+                (u) => u.user && u.user.user_id === user.user_id,
+              ) ||
               user.role === 'MA' ||
               user.role === 'HM'
             ) {
               return {
                 ...wksp,
-                users: wksp.users.map(({ user }) => ({
-                  user_id: user.user_id,
-                  usrn: user.usrn,
-                  avatar: user.avatar,
-                  email: user.email,
-                  fuln: user.fuln,
-                  phone: user.phone,
-                  role: user.role,
-                })),
+                users: removeFalsyFields(
+                  wksp.users.map(({ user }) =>
+                    user
+                      ? {
+                          user_id: user.user_id,
+                          usrn: user.usrn,
+                          avatar: user.avatar,
+                          email: user.email,
+                          fuln: user.fuln,
+                          phone: user.phone,
+                          role: user.role,
+                        }
+                      : null,
+                  ),
+                ),
               };
             }
           }
@@ -291,6 +286,7 @@ export class WorkspacesService {
         .filter((wksp) => !!wksp);
       return new_wksp;
     } catch (err) {
+      console.log(err);
       return new ForbiddenException('Get workspace failed');
     }
   }
@@ -407,15 +403,21 @@ export class WorkspacesService {
     });
     const members = {
       ...result,
-      users: result.users.map(({ user }) => ({
-        user_id: user.user_id,
-        usrn: user.usrn,
-        avatar: user.avatar,
-        email: user.email,
-        fuln: user.fuln,
-        phone: user.phone,
-        role: user.role,
-      })),
+      users: removeFalsyFields(
+        result.users.map(({ user }) =>
+          user
+            ? {
+                user_id: user.user_id,
+                usrn: user.usrn,
+                avatar: user.avatar,
+                email: user.email,
+                fuln: user.fuln,
+                phone: user.phone,
+                role: user.role,
+              }
+            : null,
+        ),
+      ),
     };
     return members;
   }
@@ -471,7 +473,7 @@ export class WorkspacesService {
       });
       if (!user) throw new NotFoundException('User not found');
       // user_workspace
-      const new_user_wksp = await this.userWorkspaceRepository.create({
+      const new_user_wksp = this.userWorkspaceRepository.create({
         workspace: wksp,
         user: user,
         crd_user_id: wksp_owner.user_id,

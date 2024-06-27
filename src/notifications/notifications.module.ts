@@ -7,9 +7,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsGateway } from './notifications.gateway';
 import { NotificationsService } from './notifications.service';
+import { UserNotificationRead } from 'src/entity/user_nofitication_read.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Notification, Workspace])],
+  imports: [
+    TypeOrmModule.forFeature([Notification, Workspace, UserNotificationRead]),
+  ],
   controllers: [NotificationsController],
   providers: [NotificationsGateway, NotificationsService],
 })

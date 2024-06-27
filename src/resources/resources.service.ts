@@ -41,6 +41,17 @@ export class ResourcesService {
   // get one resource belong to workspace
   async getWorkspaceResource(wksp_id: string, resrc_id: string) {
     const result = await this.resourceRepository.findOne({
+      where: { workspace: { wksp_id }, resrc_id },
+      relations: {
+        workspace: {
+          owner: true,
+        },
+        blog: {
+          tags: true,
+          user: true,
+          blogImage: true,
+        },
+      },
       select: {
         resrc_id: true,
         resrc_name: true,
@@ -66,25 +77,17 @@ export class ResourcesService {
           },
         },
         workspace: {
+          wksp_id: true,
           owner: {
             user_id: true,
           },
-        },
-      },
-      where: { workspace: { wksp_id }, resrc_id },
-      relations: {
-        workspace: true,
-        blog: {
-          tags: true,
-          user: true,
-          blogImage: true,
         },
       },
     });
     if (!result) throw new NotFoundException('Resource not found');
     const resource = {
       ...result,
-      blog: result.blog ? result.blog : [],
+      blog: result.blog ? result.blog : {},
     };
     return resource;
   }
