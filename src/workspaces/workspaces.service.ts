@@ -3,7 +3,7 @@ import { UserWorkspace } from 'src/entity/user_workspace.entity';
 import { Workspace } from 'src/entity/workspace.entity';
 import { selectUserRelation } from 'src/lib/constant/workspace';
 import { DecodeUser } from 'src/lib/type';
-import { canPassThrough, generateUUID } from 'src/lib/utils';
+import { canPassThrough, generateUUID, removeFalsyFields } from 'src/lib/utils';
 import { IsNull, Not, Repository } from 'typeorm';
 
 import {
@@ -117,7 +117,7 @@ export class WorkspacesService {
         } else {
           return {
             ...wksp,
-            users: wksp.users.map(({ user }) => ({
+            users: removeFalsyFields(wksp.users).map(({ user }) => ({
               user_id: user.user_id,
               usrn: user.usrn,
               avatar: user.avatar,
@@ -254,10 +254,6 @@ export class WorkspacesService {
           owner: true,
         },
         where: {
-          users: {
-            deleted_at: IsNull(),
-            deleted_user_id: IsNull(),
-          },
           owner: Not(IsNull()),
         },
       });
@@ -273,7 +269,7 @@ export class WorkspacesService {
             ) {
               return {
                 ...wksp,
-                users: wksp.users.map(({ user }) => ({
+                users: removeFalsyFields(wksp.users).map(({ user }) => ({
                   user_id: user.user_id,
                   usrn: user.usrn,
                   avatar: user.avatar,
@@ -327,7 +323,7 @@ export class WorkspacesService {
           ) {
             return {
               ...wksp,
-              users: wksp.users.map(({ user, upd_at }) => ({
+              users: removeFalsyFields(wksp.users).map(({ user, upd_at }) => ({
                 user_id: user.user_id,
                 usrn: user.usrn,
                 avatar: user.avatar,
