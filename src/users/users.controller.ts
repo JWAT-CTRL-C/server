@@ -68,8 +68,14 @@ export class UsersController {
 
   @Get('all')
   @Roles('HM', 'MA', 'PM')
-  async findAll(@Query('page') page: string) {
-    return this.usersService.getAllUsers(+page);
+  async findAll() {
+    return this.usersService.getAllUsers();
+  }
+
+  @Get('all/admin')
+  @Roles('HM', 'MA')
+  async findAllAdmin(@Query('page') page: string) {
+    return this.usersService.getAllUsersAdmin(+page);
   }
 
   @Get('me')
