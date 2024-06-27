@@ -3,7 +3,7 @@ import { UserWorkspace } from 'src/entity/user_workspace.entity';
 import { Workspace } from 'src/entity/workspace.entity';
 import { selectUserRelation } from 'src/lib/constant/workspace';
 import { DecodeUser } from 'src/lib/type';
-import { canPassThrough, generateUUID } from 'src/lib/utils';
+import { canPassThrough, generateUUID, removeFalsyFields } from 'src/lib/utils';
 import { IsNull, Not, Repository } from 'typeorm';
 
 import {
@@ -117,7 +117,7 @@ export class WorkspacesService {
         } else {
           return {
             ...wksp,
-            users: wksp.users.map(({ user }) => ({
+            users: removeFalsyFields(wksp.users).map(({ user }) => ({
               user_id: user.user_id,
               usrn: user.usrn,
               avatar: user.avatar,
@@ -177,24 +177,6 @@ export class WorkspacesService {
             fuln: true,
           },
         },
-        notifications: {
-          noti_id: true,
-          noti_tle: true,
-          noti_cont: true,
-          crd_at: true,
-          user: {
-            user_id: true,
-            usrn: true,
-            fuln: true,
-            role: true,
-            avatar: true,
-          },
-        },
-      },
-      order: {
-        notifications: {
-          crd_at: 'DESC',
-        },
       },
       where: { wksp_id },
       relations: {
@@ -208,9 +190,6 @@ export class WorkspacesService {
         blogs: {
           blogComments: true,
           blogImage: true,
-          user: true,
-        },
-        notifications: {
           user: true,
         },
       },
@@ -254,10 +233,6 @@ export class WorkspacesService {
           owner: true,
         },
         where: {
-          users: {
-            deleted_at: IsNull(),
-            deleted_user_id: IsNull(),
-          },
           owner: Not(IsNull()),
         },
       });
@@ -273,7 +248,7 @@ export class WorkspacesService {
             ) {
               return {
                 ...wksp,
-                users: wksp.users.map(({ user }) => ({
+                users: removeFalsyFields(wksp.users).map(({ user }) => ({
                   user_id: user.user_id,
                   usrn: user.usrn,
                   avatar: user.avatar,
@@ -327,7 +302,7 @@ export class WorkspacesService {
           ) {
             return {
               ...wksp,
-              users: wksp.users.map(({ user, upd_at }) => ({
+              users: removeFalsyFields(wksp.users).map(({ user, upd_at }) => ({
                 user_id: user.user_id,
                 usrn: user.usrn,
                 avatar: user.avatar,
@@ -469,7 +444,7 @@ export class WorkspacesService {
       });
       if (!user) throw new NotFoundException('User not found');
       // user_workspace
-      const new_user_wksp = await this.userWorkspaceRepository.create({
+      const new_user_wksp = this.userWorkspaceRepository.create({
         workspace: wksp,
         user: user,
         crd_user_id: wksp_owner.user_id,

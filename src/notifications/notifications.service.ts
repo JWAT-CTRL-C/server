@@ -193,7 +193,7 @@ export class NotificationsService {
   }
 
   async getNotifications(user_id: number, page = 1) {
-    const skip = page * this.LIMIT;
+    const skip = (page - 1) * this.LIMIT;
 
     const workspaces = await this.workspaceRepository.find({
       where: { users: { user: { user_id: user_id } } },
@@ -232,12 +232,8 @@ export class NotificationsService {
     return removeFalsyFields(formated_notifications);
   }
 
-  async getWorkspaceNotifications(
-    user_id: number,
-    wksp_id: string,
-    page: number,
-  ) {
-    const skip = page * this.LIMIT;
+  async getWorkspaceNotifications(user_id: number, wksp_id: string, page = 1) {
+    const skip = (page - 1) * this.LIMIT;
 
     const workspace = await this.workspaceRepository.findOne({
       where: { wksp_id, users: { user: { user_id } } },
@@ -269,5 +265,31 @@ export class NotificationsService {
       };
     });
     return removeFalsyFields(formated_notifications);
+  }
+
+  async getUnreadNotificationAmount(user_id: number) {
+    const workspaces = await this.workspaceRepository.find({
+      where: { users: { user: { user_id: user_id } } },
+    });
+
+    const unreadAmount = await this.notificationRepository.count({
+      where: [
+        {
+          workspace: IsNull(),
+          userNotificationRead: { is_read: IsNull() },
+        },
+        {
+          workspace: {
+            wksp_id: In(workspaces.map((wksp) => wksp.wksp_id)),
+          },
+          userNotificationRead: { is_read: IsNull() },
+        },
+      ],
+      relations: {
+        workspace: true,
+        userNotificationRead: true,
+      },
+    });
+    return { unreadAmount };
   }
 }

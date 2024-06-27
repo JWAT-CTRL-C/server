@@ -54,12 +54,22 @@ export const canPassThrough = <T = unknown>(
 ) => {
   return ['MA', 'HM'].includes(user.role) ? onApprove : onDecline;
 };
-export const removeFalsyFields = <T>(obj: object | T[]) => {
-  if (Array.isArray(obj)) return obj.filter(Boolean);
 
-  Object.keys(obj).forEach((k) => {
-    if (!obj[k] || !obj[k]?.length) delete obj[k];
-  });
-
-  return obj;
+export const removeFalsyFields = <T>(data: T): T => {
+  if (Array.isArray(data)) {
+    // For arrays, filter out falsy values
+    return data.filter(Boolean) as T;
+  } else if (typeof data === 'object' && data !== null) {
+    // For objects, create a new object with only truthy values
+    const result: Partial<T> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value) {
+        result[key as keyof T] = value;
+      }
+    }
+    return result as T;
+  } else {
+    // Return other data types as is
+    return data;
+  }
 };
