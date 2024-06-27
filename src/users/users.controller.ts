@@ -178,4 +178,12 @@ export class UsersController {
   async delete(@Param('id') user_id: number, @User() user: DecodeUser) {
     return this.usersService.removeUser(user_id, user);
   }
+
+  @Post(':noti_id/seen')
+  async seenNotification(
+    @Param('noti_id') noti_id: string,
+    @User() user: DecodeUser,
+  ) {
+    return this.usersService.seenNotification(noti_id, user);
+  }
 }

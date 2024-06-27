@@ -4,6 +4,7 @@ import { selectShortWorkspace } from './workspace';
 export const relationNotification = {
   user: true,
   workspace: true,
+  userNotificationRead: true,
 };
 
 export const selectNotification = {
@@ -14,4 +15,8 @@ export const selectNotification = {
   upd_at: true,
   user: selectUser,
   workspace: selectShortWorkspace,
+  userNotificationRead: {
+    is_read: true,
+    user_noti_read_id: true,
+  },
 };

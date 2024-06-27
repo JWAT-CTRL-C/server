@@ -24,7 +24,10 @@ export class NotificationsController {
   ) {
     return this.notificationsService.getNotifications(user.user_id, page);
   }
-
+  @Get('unread')
+  async getUnreadNotifications(@User() user: DecodeUser) {
+    return this.notificationsService.getUnreadNotificationAmount(user.user_id);
+  }
   @Get(':wksp_id')
   async getWorkspaceNotifications(
     @User() user: DecodeUser,

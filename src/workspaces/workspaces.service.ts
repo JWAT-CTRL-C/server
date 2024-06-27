@@ -183,24 +183,6 @@ export class WorkspacesService {
             fuln: true,
           },
         },
-        notifications: {
-          noti_id: true,
-          noti_tle: true,
-          noti_cont: true,
-          crd_at: true,
-          user: {
-            user_id: true,
-            usrn: true,
-            fuln: true,
-            role: true,
-            avatar: true,
-          },
-        },
-      },
-      order: {
-        notifications: {
-          crd_at: 'DESC',
-        },
       },
       where: { wksp_id },
       relations: {
@@ -214,9 +196,6 @@ export class WorkspacesService {
         blogs: {
           blogComments: true,
           blogImage: true,
-          user: true,
-        },
-        notifications: {
           user: true,
         },
       },
@@ -492,7 +471,7 @@ export class WorkspacesService {
       });
       if (!user) throw new NotFoundException('User not found');
       // user_workspace
-      const new_user_wksp = await this.userWorkspaceRepository.create({
+      const new_user_wksp = this.userWorkspaceRepository.create({
         workspace: wksp,
         user: user,
         crd_user_id: wksp_owner.user_id,

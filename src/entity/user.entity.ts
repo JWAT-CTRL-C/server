@@ -13,6 +13,7 @@ import { Notification } from './notification.entity';
 import { BlogRating } from './blog-rating.entity';
 import { BlogComment } from './blog-comment.entity';
 import { UserWorkspace } from './user_workspace.entity';
+import { UserNotificationRead } from './user_nofitication_read.entity';
 
 @Entity()
 export class User {
@@ -74,4 +75,10 @@ export class User {
   //Blog Comments
   @OneToMany(() => BlogComment, (blogComments) => blogComments.user)
   blogComments: BlogComment[];
+
+  @OneToMany(
+    () => UserNotificationRead,
+    (userNotificationRead) => userNotificationRead.user,
+  )
+  userNotificationRead: UserNotificationRead[];
 }
