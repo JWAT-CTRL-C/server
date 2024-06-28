@@ -553,7 +553,7 @@ export class BlogsService {
         },
       });
     } catch (err) {
-      return new ForbiddenException('Get workspace failed');
+      throw new ForbiddenException('Get workspace failed');
     }
   }
 

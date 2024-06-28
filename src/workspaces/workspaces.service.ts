@@ -4,7 +4,7 @@ import { Workspace } from 'src/entity/workspace.entity';
 import { selectUserRelation } from 'src/lib/constant/workspace';
 import { DecodeUser } from 'src/lib/type';
 import { canPassThrough, generateUUID, removeFalsyFields } from 'src/lib/utils';
-import { IsNull, Not, Repository } from 'typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
 
 import {
   ConflictException,
@@ -29,6 +29,7 @@ export class WorkspacesService {
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(UserWorkspace)
     private userWorkspaceRepository: Repository<UserWorkspace>,
+    private dataSource: DataSource,
   ) {}
 
   async create(createWorkspaceDTO: CreateWorkspaceDTO, wksp_owner: DecodeUser) {
@@ -42,7 +43,7 @@ export class WorkspacesService {
       const user_workspace = await this.userWorkspaceRepository.create({
         user: owner,
       });
-      const workspace = await this.workspaceRepository.create({
+      const workspace = this.workspaceRepository.create({
         wksp_id: wksp_id,
         wksp_name: createWorkspaceDTO.wksp_name,
         wksp_desc: createWorkspaceDTO.wksp_desc,
@@ -55,11 +56,11 @@ export class WorkspacesService {
       owner.workspacesOwner.push(workspace);
       owner.workspaces.push(user_workspace);
 
-      await Promise.all([
-        this.userWorkspaceRepository.save(user_workspace),
-        this.workspaceRepository.save(workspace),
-        this.userRepository.save(owner),
-      ]);
+      await this.dataSource.manager.transaction(async (manager) => {
+        await manager.save(owner);
+        await manager.save(workspace);
+        await manager.save(user_workspace);
+      });
 
       return { success: true, message: 'Workspace created successfully' };
     } catch (err) {
@@ -92,7 +93,7 @@ export class WorkspacesService {
         return { success: true, message: 'Workspace updated successfully' };
       })
       .catch(() => {
-        return new ForbiddenException('Update workspace failed');
+        throw new ForbiddenException('Update workspace failed');
       });
   }
 
@@ -139,7 +140,7 @@ export class WorkspacesService {
       });
       return new_wksp;
     } catch (err) {
-      return new ForbiddenException('Get workspace failed');
+      throw new ForbiddenException('Get workspace failed');
     }
   }
   async getOneWorkspace(wksp_id: string) {
@@ -225,7 +226,7 @@ export class WorkspacesService {
     // .then((workspace) => workspace)
     // .catch((err) => {
     //   console.log(err);
-    //   return new NotFoundException('Workspace not found');
+    //   throw new NotFoundException('Workspace not found');
     // });
   }
   async getUsersWorkspaces(user: DecodeUser) {
@@ -287,7 +288,7 @@ export class WorkspacesService {
       return new_wksp;
     } catch (err) {
       console.log(err);
-      return new ForbiddenException('Get workspace failed');
+      throw new ForbiddenException('Get workspace failed');
     }
   }
   async getRecentWorkspaces(user: DecodeUser) {
@@ -341,7 +342,7 @@ export class WorkspacesService {
         .filter((wksp) => Boolean(wksp))
         .sort((a, b) => {
           if (user.role === 'MA') {
-            return new Date(b.crd_at).getTime() - new Date(a.crd_at).getTime();
+            throw new Date(b.crd_at).getTime() - new Date(a.crd_at).getTime();
           } else {
             const meA = a.users.find((u) => u.user_id === user.user_id);
             const meB = b.users.find((u) => u.user_id === user.user_id);
@@ -352,7 +353,7 @@ export class WorkspacesService {
       return mapped_workspaces;
     } catch (err) {
       console.log(err);
-      return new ForbiddenException('Get workspace failed');
+      throw new ForbiddenException('Get workspace failed');
     }
   }
   async removeWorkspace(wksp_id: string, wksp_owner: DecodeUser) {
@@ -381,7 +382,7 @@ export class WorkspacesService {
         return { success: true, message: 'Workspace deleted successfully' };
       })
       .catch(() => {
-        return new ForbiddenException('Delete workspace failed');
+        throw new ForbiddenException('Delete workspace failed');
       });
   }
   async getMember(wksp_id: string) {
@@ -449,7 +450,7 @@ export class WorkspacesService {
             return { success: true, message: 'Member added successfully' };
           })
           .catch(() => {
-            return new ForbiddenException('Add member failed');
+            throw new ForbiddenException('Add member failed');
           });
       }
     } else {
@@ -480,17 +481,30 @@ export class WorkspacesService {
       });
       user.workspaces.push(user_wksp);
       wksp.users.push(user_wksp);
-      return await Promise.all([
-        this.userWorkspaceRepository.save(new_user_wksp),
-        this.workspaceRepository.save(wksp),
-        this.userRepository.save(user),
-      ])
-        .then(() => {
-          return { success: true, message: 'Member added successfully' };
+      await this.dataSource.manager
+        .transaction(async (manager) => {
+          await manager.save(user);
+          await manager.save(wksp);
+          await manager.save(new_user_wksp);
         })
         .catch(() => {
-          return new ForbiddenException('Add member failed');
+          throw new ForbiddenException('Add member failed');
         });
+      return { success: true, message: 'Member added successfully' };
+
+      // await this.userWorkspaceRepository.save(new_user_wksp).catch(() => {
+      //   throw new ForbiddenException('Add member failed');
+      // });
+      // return await Promise.all([
+      //   this.workspaceRepository.save(wksp),
+      //   this.userRepository.save(user),
+      // ])
+      //   .then(() => {
+      //     return { success: true, message: 'Member added successfully' };
+      //   })
+      //   .catch(() => {
+      //     throw new ForbiddenException('Add member failed');
+      //   });
     }
   }
   async removeMember(
@@ -566,11 +580,12 @@ export class WorkspacesService {
     );
     wksp.owner = new_owner;
     new_owner.workspacesOwner.push(wksp);
-    return await Promise.all([
-      this.workspaceRepository.save(wksp),
-      this.userRepository.save(new_owner),
-      this.userRepository.save(old_owner),
-    ])
+    return await this.dataSource.manager
+      .transaction(async (manager) => {
+        await manager.save(old_owner);
+        await manager.save(new_owner);
+        await manager.save(wksp);
+      })
       .then(() => {
         return {
           success: true,
@@ -578,7 +593,7 @@ export class WorkspacesService {
         };
       })
       .catch(() => {
-        return new ForbiddenException('Franchise workspace failed');
+        throw new ForbiddenException('Franchise workspace failed');
       });
   }
 
