@@ -40,7 +40,6 @@ export class AuthService {
         privateKey,
         algorithm: 'RS256',
         expiresIn: '30 minutes',
-        // expiresIn: '7 days',
       }),
       this.jwtService.signAsync(payload, {
         privateKey,
@@ -118,7 +117,7 @@ export class AuthService {
         `user::${user_id.toString()}`,
       );
 
-      if (!key) throw new BadRequestException('User not found');
+      if (!key) throw new NotFoundException('Key not found');
 
       const decodeUser: JwtPayload = await this.jwtService.verifyAsync(
         refresh_token,
@@ -160,6 +159,7 @@ export class AuthService {
 
       return tokens;
     } catch (error) {
+      console.error(error);
       throw new HttpException(error.message, error.status ?? 401);
     }
   }

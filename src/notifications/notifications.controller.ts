@@ -3,6 +3,8 @@ import { RolesGuard } from 'src/guard/roles.guard';
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
+import { User } from 'src/decorator/user.decorator';
+import { DecodeUser } from 'src/lib/type';
 
 @ApiBearerAuth()
 @ApiHeader({
@@ -15,22 +17,25 @@ import { NotificationsService } from './notifications.service';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  @Get(':user_id')
+  @Get()
   async getNotifications(
-    @Param('user_id') user_id: number,
+    @User() user: DecodeUser,
     @Query('page') page: number,
   ) {
-    return this.notificationsService.getNotifications(user_id, page);
+    return this.notificationsService.getNotifications(user.user_id, page);
   }
-
-  @Get(':user_id/:wksp_id')
+  @Get('unread')
+  async getUnreadNotifications(@User() user: DecodeUser) {
+    return this.notificationsService.getUnreadNotificationAmount(user.user_id);
+  }
+  @Get(':wksp_id')
   async getWorkspaceNotifications(
-    @Param('user_id') user_id: number,
+    @User() user: DecodeUser,
     @Param('wksp_id') wksp_id: string,
     @Query('page') page: number,
   ) {
     return this.notificationsService.getWorkspaceNotifications(
-      user_id,
+      user.user_id,
       wksp_id,
       page,
     );

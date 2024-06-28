@@ -9,8 +9,9 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
-  UnauthorizedException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -20,13 +21,21 @@ import { UpdateProfileDTO } from './dto/update-profile.dto';
 import { DecodeUser } from 'src/lib/type';
 import { selectUser } from 'src/lib/constant/user';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Notification } from 'src/entity/notification.entity';
+import { UserNotificationRead } from 'src/entity/user_notification_read.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(Notification)
+    private notificationRepository: Repository<Notification>,
+    @InjectRepository(UserNotificationRead)
+    private userNotificationReadRepository: Repository<UserNotificationRead>,
     private cloudinaryService: CloudinaryService,
   ) {}
+
+  private readonly LIMIT = 10;
 
   async createUser(createUserDTO: CreateUserDTO, user: DecodeUser) {
     const foundUser = await this.userRepository.findOne({
@@ -58,7 +67,8 @@ export class UsersService {
 
     const isMatch = await bcrypt.compare(changePassDTO.oldPass, foundUser.pass);
 
-    if (!isMatch) throw new UnauthorizedException('Old password is incorrect');
+    if (!isMatch)
+      throw new UnprocessableEntityException('Old password is incorrect');
 
     const hashedPassword = await bcrypt.hash(changePassDTO.newPass, saltRounds);
 
@@ -74,11 +84,18 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: { user_id },
       select: selectUser,
+      relations: { workspaces: { workspace: true } },
     });
 
     if (!user) throw new NotFoundException('User not found');
 
-    return user;
+    return {
+      ...user,
+      workspaces: user.workspaces.map((w) => ({
+        wksp_id: w.workspace.wksp_id,
+        wksp_name: w.workspace.wksp_name,
+      })),
+    };
   }
 
   async uploadImage(file: Express.Multer.File, user_id: number) {
@@ -130,6 +147,13 @@ export class UsersService {
   }
 
   async removeUser(user_id: number, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id },
+      withDeleted: true,
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    if (foundUser.deleted_at)
+      throw new BadRequestException('User already deleted');
     await Promise.all([
       this.userRepository.softDelete({ user_id }),
       this.userRepository.update(
@@ -140,11 +164,82 @@ export class UsersService {
 
     return { success: true, message: 'User deleted successfully' };
   }
+
   async getAllUsers() {
     const users = await this.userRepository.find({
       select: selectUser,
     });
 
     return users;
+  }
+
+  async getAllUsersAdmin(page: number) {
+    const skip = (page - 1) * this.LIMIT;
+
+    const [users, count] = await this.userRepository.findAndCount({
+      skip,
+      take: this.LIMIT,
+      select: selectUser,
+      withDeleted: true,
+      order: {
+        user_id: 'ASC',
+      },
+    });
+
+    return {
+      data: users,
+      currentPage: page,
+      totalPages: Math.ceil(count / this.LIMIT),
+    };
+  }
+
+  async restoreUser(user_id: number) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id },
+      withDeleted: true,
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    if (!foundUser.deleted_at)
+      throw new BadRequestException('User already restored');
+
+    await this.userRepository.restore({ user_id });
+
+    return { success: true, message: 'User Restore successfully' };
+  }
+  async seenNotification(noti_id: string, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOneBy({
+      user_id: user.user_id,
+    });
+
+    if (!foundUser) throw new NotFoundException('User not found');
+    const noti = await this.notificationRepository.findOneBy({
+      noti_id,
+    });
+
+    if (!noti) throw new NotFoundException('Notification not found');
+    return await this.userNotificationReadRepository
+      .findOne({
+        where: {
+          noti_id,
+          user_id: foundUser.user_id,
+          is_read: true,
+        },
+      })
+      .then(async (res) => {
+        if (!res) {
+          const seenNotify = this.userNotificationReadRepository.create({
+            noti_id,
+            user_id: foundUser.user_id,
+          });
+          return await this.userNotificationReadRepository
+            .save(seenNotify)
+            .then(() => {
+              return { success: true, message: 'success' };
+            })
+            .catch(() => {
+              throw new InternalServerErrorException('Something went wrong');
+            });
+        }
+      });
   }
 }

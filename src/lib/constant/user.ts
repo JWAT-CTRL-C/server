@@ -6,4 +6,7 @@ export const selectUser = {
   email: true,
   phone: true,
   role: true,
+  workspaces: true,
+  crd_at: true,
+  deleted_at: true,
 };

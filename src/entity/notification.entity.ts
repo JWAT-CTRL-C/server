@@ -4,11 +4,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Workspace } from './workspace.entity';
+import { UserNotificationRead } from './user_notification_read.entity';
 
 @Entity()
 export class Notification {
@@ -33,4 +35,9 @@ export class Notification {
   @ManyToOne(() => Workspace, (workspace) => workspace.notifications)
   @JoinColumn({ name: 'wksp_id' })
   workspace: Workspace;
+  @OneToMany(
+    () => UserNotificationRead,
+    (userNotificationRead) => userNotificationRead.notification,
+  )
+  userNotificationRead: UserNotificationRead[];
 }

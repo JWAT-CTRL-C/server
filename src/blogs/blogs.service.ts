@@ -1,33 +1,38 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, Like, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 
-import { CreateBlogDTO } from './dto/create-blog.dto';
-import { UpdateBlogDTO } from './dto/update-blog.dto';
-import { DecodeUser } from 'src/lib/type';
-import { User } from 'src/entity/user.entity';
-import { Blog } from 'src/entity/blog.entity';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { BlogImage } from 'src/entity/blog-image.entity';
+import { Blog } from 'src/entity/blog.entity';
+import { Resource } from 'src/entity/resource.entity';
 import { Tag } from 'src/entity/tag.entity';
-import { generateUUID } from 'src/lib/utils';
+import { User } from 'src/entity/user.entity';
+import { Workspace } from 'src/entity/workspace.entity';
 import {
   blogRelationWithUser,
   relationsBlog,
   selectBlog,
 } from 'src/lib/constant/blog';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { Workspace } from 'src/entity/workspace.entity';
-import { relationWithUser } from 'src/lib/constant/workspace';
-import { Resource } from 'src/entity/resource.entity';
+import { DecodeUser } from 'src/lib/type';
+import { generateUUID, getRandomBlogs } from 'src/lib/utils';
+import { CreateBlogDTO } from './dto/create-blog.dto';
+import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
+import { UpdateBlogDTO } from './dto/update-blog.dto';
+import { BlogComment } from 'src/entity/blog-comment.entity';
+import { BlogRating } from 'src/entity/blog-rating.entity';
 
 @Injectable()
 export class BlogsService {
+  private readonly LIMIT = 12;
+
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     @InjectRepository(Blog) private readonly blogRepository: Repository<Blog>,
@@ -39,6 +44,10 @@ export class BlogsService {
     private readonly workspaceRepository: Repository<Workspace>,
     @InjectRepository(Resource)
     private readonly resourceRepository: Repository<Resource>,
+    @InjectRepository(BlogComment)
+    private readonly blogCommentRepository: Repository<BlogComment>,
+    @InjectRepository(BlogRating)
+    private readonly blogRatingRepository: Repository<BlogRating>,
   ) {}
 
   async createBlog(createBlogDTO: CreateBlogDTO, user: DecodeUser) {
@@ -168,6 +177,8 @@ export class BlogsService {
       select: selectBlog,
     });
 
+    if (!blog) throw new NotFoundException('Blog not found');
+
     return blog;
   }
 
@@ -180,12 +191,12 @@ export class BlogsService {
       where: { user_id: user.user_id },
     });
 
-    const checOwnerBlog = await this.blogRepository.findOne({
+    const checkOwnerBlog = await this.blogRepository.findOne({
       where: { blog_id: blog_id, user: { user_id: user.user_id } },
       relations: { ...blogRelationWithUser },
     });
     // check blog belong to user
-    if (!checOwnerBlog)
+    if (!checkOwnerBlog)
       throw new NotAcceptableException('Blog not belong to user');
 
     //check user exist
@@ -253,12 +264,12 @@ export class BlogsService {
     //check user exist
     if (!foundUser) throw new NotFoundException('User not found');
 
-    const checOwnerBlog = await this.blogRepository.findOne({
+    const checkOwnerBlog = await this.blogRepository.findOne({
       where: { blog_id: blog_id, user: { user_id: user.user_id } },
       relations: { ...blogRelationWithUser },
     });
     // check blog belong to user
-    if (!checOwnerBlog)
+    if (!checkOwnerBlog)
       throw new NotAcceptableException('Blog not belong to user');
 
     //check blog exist
@@ -275,38 +286,295 @@ export class BlogsService {
     return { success: true, message: 'Blog removed successfully' };
   }
 
-  async findAll() {
+  async findAll(page = 1) {
+    const skip = (page - 1) * this.LIMIT;
+
+    const blogs = await this.blogRepository.find({
+      skip,
+      take: this.LIMIT,
+      relations: relationsBlog,
+      order: {
+        crd_at: 'DESC',
+      },
+    });
+
+    return blogs;
+  }
+
+  async getRecentBlogs() {
     const blogs = await this.blogRepository.find({
       relations: relationsBlog,
+      order: {
+        crd_at: 'DESC',
+      },
+      take: 6,
     });
     return blogs;
   }
 
-  async findAllByUserId(user: DecodeUser) {
+  async findAllByUserId(user: DecodeUser, page: number) {
     const foundUser = await this.userRepository.findOne({
       where: { user_id: user.user_id },
     });
     if (!foundUser) throw new NotFoundException('User not found');
-    const blogs = await this.blogRepository.find({
+    const skip = (page - 1) * this.LIMIT;
+
+    const [blogs, totalBlogs] = await this.blogRepository.findAndCount({
       relations: relationsBlog,
       where: { user: { user_id: user.user_id } },
+      skip,
+      take: this.LIMIT,
     });
-    return blogs;
+
+    const totalPages = Math.ceil(totalBlogs / this.LIMIT);
+    return {
+      data: blogs,
+      currentPage: page,
+      totalPages,
+    };
   }
 
-  async filterBlogByTitleForCurrentUser(user: DecodeUser, blog_tle: string) {
+  async filterBlogByTitleForCurrentUser(
+    user: DecodeUser,
+    blog_tle: string,
+    page: number,
+  ) {
     const foundUser = await this.userRepository.findOne({
       where: { user_id: user.user_id },
     });
     if (!foundUser) throw new NotFoundException('User not found');
-    const foundBlogs = await this.blogRepository.find({
+    const skip = (page - 1) * this.LIMIT;
+
+    const [blogs, totalBlogs] = await this.blogRepository.findAndCount({
       where: {
         user: { user_id: user.user_id },
         blog_tle: ILike(`%${blog_tle}%`),
       },
       relations: relationsBlog,
       select: selectBlog,
+      skip,
+      take: this.LIMIT,
     });
-    return foundBlogs;
+    const totalPages = Math.ceil(totalBlogs / this.LIMIT);
+    return {
+      data: blogs,
+      currentPage: page,
+      totalPages,
+    };
+  }
+
+  async createComment(
+    createBlogCommentDTO: CreateBlogCommentDTO,
+    user: DecodeUser,
+    blog_id: string,
+  ) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    //check user exist
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    const createdBlogComment = await this.blogCommentRepository.create({
+      ...createBlogCommentDTO,
+      blog_cmt_id: generateUUID('blog-comment', user.user_id),
+      user: { user_id: user.user_id },
+      blog: foundBlog,
+    });
+    await this.blogCommentRepository.save(createdBlogComment);
+    return { success: true, message: 'Create comment successfully' };
+  }
+
+  async findAllCommentByBlogId(blog_id: string, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    //check user exist
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    return await this.blogCommentRepository.find({
+      where: { blog: { blog_id: blog_id } },
+      relations: { user: true },
+      order: {
+        crd_at: 'DESC',
+      },
+    });
+  }
+
+  async ratingBlog(blog_id: string, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    //check user exist
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    const foundBlogRating = await this.blogRatingRepository.findOne({
+      where: { blog: { blog_id: blog_id }, user: { user_id: user.user_id } },
+    });
+    if (!foundBlogRating) {
+      const createdBlogRating = await this.blogRatingRepository.create({
+        blog_rtg_id: generateUUID('blog-rating', user.user_id),
+        blog: foundBlog,
+        user: foundUser,
+        is_rated: true,
+      });
+      await this.blogRatingRepository.save(createdBlogRating);
+    } else {
+      foundBlogRating.is_rated = !foundBlogRating.is_rated;
+      await this.blogRatingRepository.save(foundBlogRating);
+    }
+
+    return { success: true, message: 'Rating a blog successfully' };
+  }
+
+  async isRatingBlog(blog_id: string, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    //check user exist
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    const foundBlogRating = await this.blogRatingRepository.findOne({
+      where: { blog: { blog_id: blog_id }, user: { user_id: user.user_id } },
+    });
+    if (!foundBlogRating) {
+      throw new NotFoundException('Not found blog rating');
+    }
+
+    return {
+      is_rated: foundBlogRating.is_rated,
+    };
+  }
+
+  async totalRating(blog_id: string) {
+    //check blog exist
+    const foundBlog = await this.blogRepository.findOne({
+      where: { blog_id: blog_id },
+    });
+    if (!foundBlog) throw new NotFoundException('Blog not found');
+
+    const foundBlogRating = await this.blogRatingRepository.find({
+      where: { blog: { blog_id: blog_id } },
+    });
+    const totalRating = foundBlogRating.length;
+    return {
+      total_rating: totalRating,
+    };
+  }
+
+  async relatedBlogs(blog_id: string, user: DecodeUser) {
+    const check = await Promise.allSettled([
+      this.blogRepository.findOne({
+        where: { blog_id: blog_id },
+        relations: {
+          tags: true,
+        },
+      }),
+      this.userRepository.findOne({
+        where: { user_id: user.user_id },
+      }),
+    ]);
+
+    const foundBlog = check[0];
+    const foundUser = check[1];
+
+    if (foundBlog.status !== 'fulfilled')
+      throw new NotFoundException('Blog not found');
+
+    if (foundUser.status !== 'fulfilled')
+      throw new NotFoundException('User not found');
+
+    const relatedBlogs = await this.blogRepository.find({
+      where: [
+        {
+          tags: { tag_id: In(foundBlog.value.tags.map((tag) => tag.tag_id)) },
+        },
+        {
+          user: {
+            user_id: foundUser.value.user_id,
+          },
+        },
+      ],
+      relations: relationsBlog,
+    });
+
+    return getRandomBlogs(relatedBlogs, 3);
+  }
+  async getWorkspaceList(user: DecodeUser) {
+    try {
+      return await this.workspaceRepository.find({
+        select: {
+          wksp_id: true,
+          wksp_name: true,
+          resources: {
+            resrc_id: true,
+            resrc_name: true,
+            blog: {
+              blog_id: true,
+            },
+          },
+          users: {},
+        },
+        relations: {
+          resources: {
+            blog: true,
+          },
+          users: true,
+        },
+        where: {
+          users: {
+            user: {
+              user_id: user.user_id,
+            },
+          },
+        },
+      });
+    } catch (err) {
+      return new ForbiddenException('Get workspace failed');
+    }
+  }
+
+  async getBlogsForAdmin(page: number, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    const skip = (page - 1) * this.LIMIT;
+
+    const [blogs, totalBlogs] = await this.blogRepository.findAndCount({
+      relations: relationsBlog,
+      select: selectBlog,
+      skip,
+      take: this.LIMIT,
+    });
+    const totalPages = Math.ceil(totalBlogs / this.LIMIT);
+    return {
+      data: blogs,
+      currentPage: page,
+      totalPages,
+    };
   }
 }

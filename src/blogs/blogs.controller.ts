@@ -9,6 +9,9 @@ import {
   UseInterceptors,
   UploadedFile,
   Query,
+  Put,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -24,6 +27,8 @@ import { CreateBlogDTO } from './dto/create-blog.dto';
 import { UpdateBlogDTO } from './dto/update-blog.dto';
 import { User } from 'src/decorator/user.decorator';
 import { DecodeUser } from 'src/lib/type';
+import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
+import { Roles } from 'src/decorator/roles.decorator';
 
 @Controller('blogs')
 @ApiBearerAuth()
@@ -85,6 +90,14 @@ export class BlogsController {
     return this.blogsService.uploadImage(file);
   }
 
+  @Get('/recent')
+  async getRecentBlogs() {
+    return await this.blogsService.getRecentBlogs();
+  }
+  @Get('workspace-info')
+  getWorkspaceListByUser(@User() user: DecodeUser) {
+    return this.blogsService.getWorkspaceList(user);
+  }
   @Get(':blog_id')
   @ApiParam({
     name: 'blog_id',
@@ -140,13 +153,21 @@ export class BlogsController {
   }
 
   @Get()
-  async findAll() {
-    return await this.blogsService.findAll();
+  async findAll(@Query('page') page: string) {
+    return await this.blogsService.findAll(+page);
   }
 
   @Get('for/user')
-  async findAllByUserId(@User() user: DecodeUser) {
-    return await this.blogsService.findAllByUserId(user);
+  async findAllByUserId(
+    @User() user: DecodeUser,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('blog_tle') blog_tle: string,
+  ) {
+    return await this.blogsService.filterBlogByTitleForCurrentUser(
+      user,
+      blog_tle,
+      page,
+    );
   }
 
   @Get('filter/title')
@@ -158,10 +179,103 @@ export class BlogsController {
   async filterBlogByTitleForCurrentUser(
     @User() user: DecodeUser,
     @Query('blog_tle') blog_tle: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
   ) {
     return await this.blogsService.filterBlogByTitleForCurrentUser(
       user,
       blog_tle,
+      page,
     );
+  }
+
+  @Post(':blog_id/comments')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        blog_cmt_cont: {
+          example: 'This a comment for a blog',
+          type: 'string',
+        },
+      },
+      required: ['blog_cmt_cont'],
+    },
+  })
+  async createComment(
+    @Body() createBlogCommentDTO: CreateBlogCommentDTO,
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.createComment(
+      createBlogCommentDTO,
+      user,
+      blog_id,
+    );
+  }
+
+  @Get(':blog_id/comments')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  async findAllCommentByBlogId(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.findAllCommentByBlogId(blog_id, user);
+  }
+
+  @Put(':blog_id/rating')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  async ratingBlog(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.ratingBlog(blog_id, user);
+  }
+
+  @Get(':blog_id/rating')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  async isRatingBlog(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.isRatingBlog(blog_id, user);
+  }
+
+  @Get(':blog_id/related')
+  @ApiParam({
+    name: 'blog_id',
+    type: 'string',
+    required: true,
+  })
+  async relatedBlogs(
+    @User() user: DecodeUser,
+    @Param('blog_id') blog_id: string,
+  ) {
+    return await this.blogsService.relatedBlogs(blog_id, user);
+  }
+
+  @Roles('MA')
+  @Get('for/master-admin')
+  async findAllBlogsForMasterAdmin(
+    @User() user: DecodeUser,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+  ) {
+    return await this.blogsService.getBlogsForAdmin(page, user);
   }
 }

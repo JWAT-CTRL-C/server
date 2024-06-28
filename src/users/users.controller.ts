@@ -11,6 +11,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -69,6 +70,12 @@ export class UsersController {
   @Roles('HM', 'MA', 'PM')
   async findAll() {
     return this.usersService.getAllUsers();
+  }
+
+  @Get('all/admin')
+  @Roles('HM', 'MA')
+  async findAllAdmin(@Query('page') page: string) {
+    return this.usersService.getAllUsersAdmin(+page);
   }
 
   @Get('me')
@@ -170,5 +177,23 @@ export class UsersController {
   @Delete(':id')
   async delete(@Param('id') user_id: number, @User() user: DecodeUser) {
     return this.usersService.removeUser(user_id, user);
+  }
+
+  @Roles('HM', 'MA')
+  @Patch(':id/restore')
+  // @ApiParam({
+  //   name: 'id',
+  //   required: true,
+  //   type: 'number',
+  // })
+  async restoreUser(@Param('id') id: number) {
+    await this.usersService.restoreUser(id);
+  }
+  @Post(':noti_id/seen')
+  async seenNotification(
+    @Param('noti_id') noti_id: string,
+    @User() user: DecodeUser,
+  ) {
+    return this.usersService.seenNotification(noti_id, user);
   }
 }

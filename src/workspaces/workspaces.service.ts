@@ -1,31 +1,28 @@
+import { User } from 'src/entity/user.entity';
+import { UserWorkspace } from 'src/entity/user_workspace.entity';
+import { Workspace } from 'src/entity/workspace.entity';
+import { selectUserRelation } from 'src/lib/constant/workspace';
+import { DecodeUser } from 'src/lib/type';
+import { canPassThrough, generateUUID, removeFalsyFields } from 'src/lib/utils';
+import { IsNull, Not, Repository } from 'typeorm';
+
 import {
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
-import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Workspace } from 'src/entity/workspace.entity';
-import { Repository } from 'typeorm';
-import { generateUUID } from 'src/lib/utils';
-import { User } from 'src/entity/user.entity';
-import {
-  relationWithResourcesNestBlog,
-  selectUserRelation,
-} from 'src/lib/constant/workspace';
+
 import { AddMemberDTO } from './dto/add-member.dto';
+import { CreateWorkspaceDTO } from './dto/create-workspace.dto';
 import { FranchiseWorkspaceDTO } from './dto/franchise-workspace.dto';
-import { DecodeUser } from 'src/lib/type';
-import {
-  relationWithResources,
-  selectResources,
-} from 'src/lib/constant/resource';
-import { UserWorkspace } from 'src/entity/user_workspace.entity';
+import { UpdateWorkspaceDTO } from './dto/update-workspace.dto';
 
 @Injectable()
 export class WorkspacesService {
+  private readonly LIMIT = 12;
+
   constructor(
     @InjectRepository(Workspace)
     private workspaceRepository: Repository<Workspace>,
@@ -76,7 +73,13 @@ export class WorkspacesService {
     wksp_owner: DecodeUser,
   ) {
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id, owner: { user_id: wksp_owner.user_id } },
+      where: {
+        wksp_id,
+        ...canPassThrough<object>(wksp_owner, {
+          onApprove: {},
+          onDecline: { owner: { user_id: wksp_owner.user_id } },
+        }),
+      },
       relations: { owner: true },
     });
     if (!wksp) throw new ForbiddenException('Update workspace failed');
@@ -88,7 +91,7 @@ export class WorkspacesService {
       .then(() => {
         return { success: true, message: 'Workspace updated successfully' };
       })
-      .catch((err) => {
+      .catch(() => {
         return new ForbiddenException('Update workspace failed');
       });
   }
@@ -116,15 +119,21 @@ export class WorkspacesService {
         } else {
           return {
             ...wksp,
-            users: wksp.users.map(({ user }) => ({
-              user_id: user.user_id,
-              usrn: user.usrn,
-              avatar: user.avatar,
-              email: user.email,
-              fuln: user.fuln,
-              phone: user.phone,
-              role: user.role,
-            })),
+            users: removeFalsyFields(
+              wksp.users.map(({ user }) =>
+                user
+                  ? {
+                      user_id: user.user_id,
+                      usrn: user.usrn,
+                      avatar: user.avatar,
+                      email: user.email,
+                      fuln: user.fuln,
+                      phone: user.phone,
+                      role: user.role,
+                    }
+                  : null,
+              ),
+            ),
           };
         }
       });
@@ -141,7 +150,41 @@ export class WorkspacesService {
         wksp_desc: true,
         owner: selectUserRelation,
         users: true,
-        resources: true,
+        resources: {
+          resrc_id: true,
+          resrc_name: true,
+          resrc_url: true,
+          blog: {
+            blog_id: true,
+            blog_tle: true,
+            blogRatings: true,
+            blogImage: {
+              blog_img_id: true,
+              blog_img_url: true,
+            },
+            tags: {
+              tag_name: true,
+            },
+          },
+        },
+        blogs: {
+          blog_id: true,
+          blog_tle: true,
+          blogRatings: true,
+          blogImage: {
+            blog_img_id: true,
+            blog_img_url: true,
+          },
+          crd_at: true,
+          tags: {
+            tag_name: true,
+          },
+          user: {
+            user_id: true,
+            usrn: true,
+            fuln: true,
+          },
+        },
       },
       where: { wksp_id },
       relations: {
@@ -152,21 +195,31 @@ export class WorkspacesService {
         resources: {
           blog: true,
         },
+        blogs: {
+          blogComments: true,
+          blogImage: true,
+          user: true,
+        },
       },
     });
     if (!result) throw new NotFoundException('Workspace not found');
-
     const workspace = {
       ...result,
-      users: result.users.map(({ user }) => ({
-        user_id: user.user_id,
-        usrn: user.usrn,
-        avatar: user.avatar,
-        email: user.email,
-        fuln: user.fuln,
-        phone: user.phone,
-        role: user.role,
-      })),
+      users: removeFalsyFields(
+        result.users.map(({ user }) =>
+          user
+            ? {
+                user_id: user.user_id,
+                usrn: user.usrn,
+                avatar: user.avatar,
+                email: user.email,
+                fuln: user.fuln,
+                phone: user.phone,
+                role: user.role,
+              }
+            : null,
+        ),
+      ),
     };
     return workspace;
     // .then((workspace) => workspace)
@@ -193,26 +246,110 @@ export class WorkspacesService {
           },
           owner: true,
         },
+        where: {
+          owner: Not(IsNull()),
+        },
       });
-      const new_wksp = workspace.map((wksp) => {
-        if (wksp.users.length === 0) {
-          return wksp;
-        } else {
-          return {
-            ...wksp,
-            users: wksp.users.map(({ user }) => ({
-              user_id: user.user_id,
-              usrn: user.usrn,
-              avatar: user.avatar,
-              email: user.email,
-              fuln: user.fuln,
-              phone: user.phone,
-              role: user.role,
-            })),
-          };
-        }
-      });
+      const new_wksp = workspace
+        .map((wksp) => {
+          if (wksp.users.length === 0) {
+            return wksp;
+          } else {
+            if (
+              wksp.users.some(
+                (u) => u.user && u.user.user_id === user.user_id,
+              ) ||
+              user.role === 'MA' ||
+              user.role === 'HM'
+            ) {
+              return {
+                ...wksp,
+                users: removeFalsyFields(
+                  wksp.users.map(({ user }) =>
+                    user
+                      ? {
+                          user_id: user.user_id,
+                          usrn: user.usrn,
+                          avatar: user.avatar,
+                          email: user.email,
+                          fuln: user.fuln,
+                          phone: user.phone,
+                          role: user.role,
+                        }
+                      : null,
+                  ),
+                ),
+              };
+            }
+          }
+        })
+        .filter((wksp) => !!wksp);
       return new_wksp;
+    } catch (err) {
+      console.log(err);
+      return new ForbiddenException('Get workspace failed');
+    }
+  }
+  async getRecentWorkspaces(user: DecodeUser) {
+    try {
+      const workspaces = await this.workspaceRepository.find({
+        select: {
+          wksp_id: true,
+          wksp_name: true,
+          wksp_desc: true,
+          users: true,
+          owner: selectUserRelation,
+          resources: true,
+          crd_at: true,
+        },
+        relations: {
+          users: { user: true },
+          resources: {
+            blog: true,
+          },
+          owner: true,
+        },
+        where: {
+          users: {
+            deleted_at: IsNull(),
+            deleted_user_id: IsNull(),
+          },
+          owner: Not(IsNull()),
+        },
+      });
+      const mapped_workspaces = workspaces
+        .map((wksp) => {
+          if (
+            wksp.users.some((u) => u.user.user_id === user.user_id) ||
+            user.role === 'MA'
+          ) {
+            return {
+              ...wksp,
+              users: wksp.users.map(({ user, upd_at }) => ({
+                user_id: user.user_id,
+                usrn: user.usrn,
+                avatar: user.avatar,
+                email: user.email,
+                fuln: user.fuln,
+                phone: user.phone,
+                role: user.role,
+                upd_at,
+              })),
+            };
+          }
+        })
+        .filter((wksp) => Boolean(wksp))
+        .sort((a, b) => {
+          if (user.role === 'MA') {
+            return new Date(b.crd_at).getTime() - new Date(a.crd_at).getTime();
+          } else {
+            const meA = a.users.find((u) => u.user_id === user.user_id);
+            const meB = b.users.find((u) => u.user_id === user.user_id);
+
+            return meB.upd_at.getTime() - meA.upd_at.getTime();
+          }
+        });
+      return mapped_workspaces;
     } catch (err) {
       console.log(err);
       return new ForbiddenException('Get workspace failed');
@@ -220,6 +357,21 @@ export class WorkspacesService {
   }
   async removeWorkspace(wksp_id: string, wksp_owner: DecodeUser) {
     return await Promise.all([
+      this.userWorkspaceRepository.softDelete({
+        workspace: {
+          wksp_id,
+        },
+      }),
+      this.userWorkspaceRepository.update(
+        {
+          workspace: {
+            wksp_id,
+          },
+        },
+        {
+          deleted_user_id: wksp_owner.user_id,
+        },
+      ),
       this.workspaceRepository.softDelete(wksp_id),
       this.workspaceRepository.update(wksp_id, {
         deleted_user_id: wksp_owner.user_id,
@@ -228,7 +380,7 @@ export class WorkspacesService {
       .then(() => {
         return { success: true, message: 'Workspace deleted successfully' };
       })
-      .catch((err) => {
+      .catch(() => {
         return new ForbiddenException('Delete workspace failed');
       });
   }
@@ -251,15 +403,21 @@ export class WorkspacesService {
     });
     const members = {
       ...result,
-      users: result.users.map(({ user }) => ({
-        user_id: user.user_id,
-        usrn: user.usrn,
-        avatar: user.avatar,
-        email: user.email,
-        fuln: user.fuln,
-        phone: user.phone,
-        role: user.role,
-      })),
+      users: removeFalsyFields(
+        result.users.map(({ user }) =>
+          user
+            ? {
+                user_id: user.user_id,
+                usrn: user.usrn,
+                avatar: user.avatar,
+                email: user.email,
+                fuln: user.fuln,
+                phone: user.phone,
+                role: user.role,
+              }
+            : null,
+        ),
+      ),
     };
     return members;
   }
@@ -273,7 +431,10 @@ export class WorkspacesService {
       where: {
         workspace: { wksp_id: wksp_id },
         user: { user_id: member.user_id },
+        deleted_user_id: Not(IsNull()),
+        deleted_at: Not(IsNull()),
       },
+      withDeleted: true,
     });
     if (user_wksp) {
       if (!user_wksp.deleted_at) {
@@ -287,14 +448,20 @@ export class WorkspacesService {
           .then(() => {
             return { success: true, message: 'Member added successfully' };
           })
-          .catch((err) => {
+          .catch(() => {
             return new ForbiddenException('Add member failed');
           });
       }
     } else {
       // workspace
       const wksp = await this.workspaceRepository.findOne({
-        where: { wksp_id: wksp_id, owner: { user_id: wksp_owner.user_id } },
+        where: {
+          wksp_id: wksp_id,
+          ...canPassThrough<object>(wksp_owner, {
+            onApprove: {},
+            onDecline: { owner: { user_id: wksp_owner.user_id } },
+          }),
+        },
         relations: { users: { user: true } },
       });
       if (!wksp) throw new ForbiddenException('Workspace not found');
@@ -306,7 +473,7 @@ export class WorkspacesService {
       });
       if (!user) throw new NotFoundException('User not found');
       // user_workspace
-      const new_user_wksp = await this.userWorkspaceRepository.create({
+      const new_user_wksp = this.userWorkspaceRepository.create({
         workspace: wksp,
         user: user,
         crd_user_id: wksp_owner.user_id,
@@ -321,7 +488,7 @@ export class WorkspacesService {
         .then(() => {
           return { success: true, message: 'Member added successfully' };
         })
-        .catch((err) => {
+        .catch(() => {
           return new ForbiddenException('Add member failed');
         });
     }
@@ -332,7 +499,13 @@ export class WorkspacesService {
     wksp_owner: DecodeUser,
   ) {
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id },
+      where: {
+        wksp_id: wksp_id,
+        ...canPassThrough<object>(wksp_owner, {
+          onApprove: {},
+          onDecline: { owner: { user_id: wksp_owner.user_id } },
+        }),
+      },
       relations: { owner: true },
     });
     if (wksp.owner.user_id === member_id)
@@ -357,11 +530,20 @@ export class WorkspacesService {
   ) {
     // workspace
     const wksp = await this.workspaceRepository.findOne({
-      where: { wksp_id: wksp_id, owner: { user_id: wksp_owner.user_id } },
+      where: {
+        wksp_id: wksp_id,
+        ...canPassThrough<object>(wksp_owner, {
+          onApprove: {},
+          onDecline: { owner: { user_id: wksp_owner.user_id } },
+        }),
+      },
       relations: { owner: true, users: true },
     });
     if (!wksp) throw new NotFoundException('Workspace not found');
-    if (wksp.owner.user_id !== wksp_owner.user_id)
+    if (
+      wksp.owner.user_id !== wksp_owner.user_id &&
+      !['MA', 'HM'].includes(wksp_owner.role)
+    )
       throw new ForbiddenException('Permission denied');
 
     // new owner
@@ -373,7 +555,7 @@ export class WorkspacesService {
 
     // old owner
     const old_owner = await this.userRepository.findOne({
-      where: { user_id: wksp_owner.user_id, workspacesOwner: { wksp_id } },
+      where: { user_id: wksp.owner.user_id, workspacesOwner: { wksp_id } },
       relations: { workspacesOwner: true },
     });
     if (!old_owner) throw new NotFoundException('Old owner not found');
@@ -395,27 +577,41 @@ export class WorkspacesService {
           message: 'Franchise workspace updated successfully',
         };
       })
-      .catch((err) => {
+      .catch(() => {
         return new ForbiddenException('Franchise workspace failed');
       });
   }
-  // async addResource(resource: AddResourceDTO) {
-  //   try {
-  //     const rsrc = this.resouceRepository.create({
-  //       resrc_id: generateUUID('resource', resource.wksp_id),
-  //       resrc_name: resource.resrc_name,
-  //       resrc_url: resource.resrc_url,
-  //     });
-  //     await this.resouceRepository.save(rsrc);
-  //     return await this.workspaceRepository
-  //       .update(resource.wksp_id, {
-  //         resources: [rsrc],
-  //       })
-  //       .then(() => {
-  //         return { success: true, message: 'Resource added successfully' };
-  //       });
-  //   } catch (err) {
-  //     throw new ForbiddenException('Add resource failed');
-  //   }
-  // }
+
+  async getWorkspacesForMasterAdmin(page: number, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+    const skip = (page - 1) * this.LIMIT;
+    const [workspaces, totalWorkspaces] =
+      await this.workspaceRepository.findAndCount({
+        select: {
+          wksp_id: true,
+          wksp_name: true,
+          wksp_desc: true,
+          owner: selectUserRelation,
+          resources: true,
+          crd_at: true,
+          users: true,
+        },
+        relations: {
+          owner: true,
+          resources: true,
+          users: true,
+        },
+        skip,
+        take: this.LIMIT,
+      });
+    const totalPages = Math.ceil(totalWorkspaces / this.LIMIT);
+    return {
+      data: workspaces,
+      currentPage: page,
+      totalPages,
+    };
+  }
 }
