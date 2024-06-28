@@ -6,9 +6,9 @@ import {
   selectNotification,
 } from 'src/lib/constant/notification';
 import { relationWorkspace } from 'src/lib/constant/workspace';
-import { NotificationType } from 'src/lib/type';
-import { generateUUID, removeFalsyFields } from 'src/lib/utils';
-import { In, IsNull, Repository } from 'typeorm';
+import { DecodeUser, NotificationType } from 'src/lib/type';
+import { canPassThrough, generateUUID, removeFalsyFields } from 'src/lib/utils';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -25,6 +25,7 @@ export class NotificationsService {
     private notificationRepository: Repository<Notification>,
     @InjectRepository(Workspace)
     private workspaceRepository: Repository<Workspace>,
+    private dataSource: DataSource,
   ) {}
 
   async createGlobalNotification(
@@ -88,11 +89,10 @@ export class NotificationsService {
 
       workspace.notifications.push(newNotification);
 
-      await Promise.all([
-        this.notificationRepository.save(newNotification),
-        this.workspaceRepository.save(workspace),
-      ]);
-
+      await this.dataSource.manager.transaction(async (manager) => {
+        await manager.save(workspace);
+        await manager.save(newNotification);
+      });
       io.emit(NotificationType.SUCCESS, {
         success: true,
         message: 'Workspace notification created',
@@ -170,10 +170,10 @@ export class NotificationsService {
 
       workspace.notifications.push(newNotification);
 
-      await Promise.all([
-        this.notificationRepository.save(newNotification),
-        this.workspaceRepository.save(workspace),
-      ]);
+      await this.dataSource.manager.transaction(async (manager) => {
+        await manager.save(workspace);
+        await manager.save(newNotification);
+      });
 
       const notification = await this.notificationRepository.findOne({
         where: { noti_id: newNotification.noti_id },
@@ -232,11 +232,17 @@ export class NotificationsService {
     return removeFalsyFields(formatted_notifications);
   }
 
-  async getWorkspaceNotifications(user_id: number, wksp_id: string, page = 1) {
+  async getWorkspaceNotifications(user: DecodeUser, wksp_id: string, page = 1) {
     const skip = (page - 1) * this.LIMIT;
 
     const workspace = await this.workspaceRepository.findOne({
-      where: { wksp_id, users: { user: { user_id } } },
+      where: {
+        wksp_id,
+        ...canPassThrough<object>(user, {
+          onApprove: {},
+          onDecline: { user: { user_id: user.user_id } },
+        }),
+      },
     });
 
     if (!workspace) {
@@ -246,7 +252,10 @@ export class NotificationsService {
     const notifications = await this.notificationRepository.find({
       where: {
         workspace: { wksp_id: workspace.wksp_id },
-        userNotificationRead: [{ user_id: user_id }, { is_read: IsNull() }],
+        userNotificationRead: [
+          { user_id: user.user_id },
+          { is_read: IsNull() },
+        ],
       },
       order: { crd_at: 'DESC' },
       relations: relationNotification,
