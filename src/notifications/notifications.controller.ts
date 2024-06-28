@@ -35,7 +35,7 @@ export class NotificationsController {
     @Query('page') page: number,
   ) {
     return this.notificationsService.getWorkspaceNotifications(
-      user.user_id,
+      user,
       wksp_id,
       page,
     );
