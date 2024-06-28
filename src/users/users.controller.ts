@@ -111,7 +111,7 @@ export class UsersController {
     @UploadedFile() file: Express.Multer.File,
     @User() user: DecodeUser,
   ) {
-    return this.usersService.uploadImage(file, user.user_id);
+    return this.usersService.uploadImage(file, user);
   }
 
   @Post('change-password')

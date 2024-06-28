@@ -19,7 +19,7 @@ import { UserNotificationRead } from './user_notification_read.entity';
 export class User {
   @PrimaryGeneratedColumn('increment')
   user_id: number;
-  @Column('varchar', { length: 50, nullable: false })
+  @Column('varchar', { length: 50, nullable: false, unique: true })
   usrn: string;
   @Column('text', { nullable: true })
   avatar: string;
