@@ -4,7 +4,7 @@ import {
   DeleteDateColumn,
   Entity,
   OneToMany,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Workspace } from './workspace.entity';
@@ -13,11 +13,11 @@ import { Notification } from './notification.entity';
 import { BlogRating } from './blog-rating.entity';
 import { BlogComment } from './blog-comment.entity';
 import { UserWorkspace } from './user_workspace.entity';
-import { UserNotificationRead } from './user_nofitication_read.entity';
+import { UserNotificationRead } from './user_notification_read.entity';
 
 @Entity()
 export class User {
-  @PrimaryColumn('integer')
+  @PrimaryGeneratedColumn('increment')
   user_id: number;
   @Column('varchar', { length: 50, nullable: false })
   usrn: string;

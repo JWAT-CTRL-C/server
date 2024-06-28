@@ -22,7 +22,7 @@ import { DecodeUser } from 'src/lib/type';
 import { selectUser } from 'src/lib/constant/user';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { Notification } from 'src/entity/notification.entity';
-import { UserNotificationRead } from 'src/entity/user_nofitication_read.entity';
+import { UserNotificationRead } from 'src/entity/user_notification_read.entity';
 
 @Injectable()
 export class UsersService {

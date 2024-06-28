@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Workspace } from './workspace.entity';
-import { UserNotificationRead } from './user_nofitication_read.entity';
+import { UserNotificationRead } from './user_notification_read.entity';
 
 @Entity()
 export class Notification {
