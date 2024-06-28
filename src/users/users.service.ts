@@ -48,7 +48,6 @@ export class UsersService {
 
     const newUser = this.userRepository.create({
       ...createUserDTO,
-      user_id: randomInt(99),
       pass: hashedPassword,
       crd_user_id: user.user_id,
     });
@@ -98,16 +97,16 @@ export class UsersService {
     };
   }
 
-  async uploadImage(file: Express.Multer.File, user_id: number) {
+  async uploadImage(file: Express.Multer.File, user: DecodeUser) {
     const image = await this.cloudinaryService
-      .uploadImage(file, 'users')
+      .uploadImage(file, 'users', user.usrn)
       .catch((e) => {
         console.log(e);
         throw new BadRequestException();
       });
 
     await this.userRepository.update(
-      { user_id: user_id },
+      { user_id: user.user_id },
       { avatar: image.url },
     );
 
