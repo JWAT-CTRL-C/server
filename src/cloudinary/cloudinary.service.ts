@@ -10,13 +10,17 @@ export class CloudinaryService {
   async uploadImage(
     file: Express.Multer.File,
     folder: string,
+    username?: string,
   ): Promise<UploadApiResponse | UploadApiErrorResponse> {
     return new Promise((resolve, reject) => {
-      const upload = v2.uploader.unsigned_upload_stream(
-        this.configServer.get('CLOUDINARY_PRESET'),
+      const upload = v2.uploader.upload_stream(
         {
           folder,
-          public_id: file.originalname + '_' + randomBytes(8).toString('hex'),
+          overwrite: true,
+          public_id:
+            folder === 'users'
+              ? username + '_avatar'
+              : file.filename + '_' + randomBytes(8).toString('hex'),
         },
         (error, result) => {
           if (error) return reject(error);
