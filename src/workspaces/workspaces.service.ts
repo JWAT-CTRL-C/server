@@ -143,7 +143,7 @@ export class WorkspacesService {
       throw new ForbiddenException('Get workspace failed');
     }
   }
-  async getOneWorkspace(wksp_id: string) {
+  async getOneWorkspace(wksp_id: string, user: DecodeUser) {
     const result = await this.workspaceRepository.findOne({
       select: {
         wksp_id: true,
@@ -204,6 +204,11 @@ export class WorkspacesService {
       },
     });
     if (!result) throw new NotFoundException('Workspace not found');
+    if (
+      !result.users.some((u) => u.user.user_id === user.user_id) &&
+      !canPassThrough(user, { onApprove: true, onDecline: false })
+    )
+      throw new ForbiddenException('Permission denied');
     const workspace = {
       ...result,
       users: removeFalsyFields(

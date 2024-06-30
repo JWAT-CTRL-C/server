@@ -12,7 +12,11 @@ export const relationsBlog = {
     user: true,
   },
 
-  workspace: true,
+  workspace: {
+    users: {
+      user: true,
+    },
+  },
   resource: true,
 };
 
@@ -48,6 +52,10 @@ export const selectBlog = {
   blogRatings: selectBlogRatings,
   user: selectUser,
   tags: selectTag,
+  workspace: {
+    wksp_id: true,
+    wksp_name: true,
+  },
 };
 
 export const blogRelationWithUser = {
