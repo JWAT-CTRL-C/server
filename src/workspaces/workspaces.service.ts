@@ -580,14 +580,11 @@ export class WorkspacesService {
     if (!old_owner) throw new NotFoundException('Old owner not found');
 
     // franchise process
-    old_owner.workspacesOwner = old_owner.workspacesOwner.filter(
-      (workspace) => workspace.wksp_id !== wksp_id,
-    );
     wksp.owner = new_owner;
+
     new_owner.workspacesOwner.push(wksp);
     return await this.dataSource.manager
       .transaction(async (manager) => {
-        await manager.save(old_owner);
         await manager.save(new_owner);
         await manager.save(wksp);
       })

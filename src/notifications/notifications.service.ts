@@ -240,7 +240,7 @@ export class NotificationsService {
         wksp_id,
         ...canPassThrough<object>(user, {
           onApprove: {},
-          onDecline: { user: { user_id: user.user_id } },
+          onDecline: { users: { user: { user_id: user.user_id } } },
         }),
       },
     });
