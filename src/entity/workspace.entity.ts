@@ -38,7 +38,7 @@ export class Workspace {
 
   // relations
   // user-owner
-  @ManyToOne(() => User, (user) => user.workspacesOwner)
+  @ManyToOne(() => User, (user) => user.workspacesOwner, { nullable: false })
   @JoinColumn({ name: 'owner_id' })
   owner: User;
 
