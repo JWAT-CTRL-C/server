@@ -1,8 +1,6 @@
 import helmet from 'helmet';
-import {
-  WinstonModule,
-  utilities as nestWinstonModuleUtilities,
-} from 'nest-winston';
+import { utilities as winstonUtilities, WinstonModule } from 'nest-winston';
+import * as winston from 'winston';
 
 import { HttpStatus, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -10,7 +8,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
-import * as winston from 'winston';
+
 import DailyRotateFile = require('winston-daily-rotate-file');
 
 async function bootstrap() {
@@ -22,7 +20,7 @@ async function bootstrap() {
           format: winston.format.combine(
             winston.format.timestamp(),
             winston.format.ms(),
-            nestWinstonModuleUtilities.format.nestLike('Synergy Server', {
+            winstonUtilities.format.nestLike('Synergy Server', {
               colors: true,
               prettyPrint: true,
               processId: true,
@@ -42,10 +40,7 @@ async function bootstrap() {
   });
 
   const config = app.get(ConfigService);
-  app.enableCors({
-    origin: '*',
-    credentials: true,
-  });
+  app.enableCors({ origin: '*' });
   app.use(helmet());
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
@@ -62,6 +57,9 @@ async function bootstrap() {
     .addTag('Auth', 'Endpoints for authentication')
     .addTag('Users', 'Endpoints for users management')
     .addTag('Blogs', 'Endpoints for blogs management')
+    .addTag('Workspaces', 'Endpoints for workspaces management')
+    .addTag('Resources', 'Endpoints for resources management')
+    .addTag('Notifications', 'Endpoints for notifications management')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, configSwagger);

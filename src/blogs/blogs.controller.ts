@@ -104,8 +104,8 @@ export class BlogsController {
     type: 'string',
     required: true,
   })
-  findOne(@Param('blog_id') id: string) {
-    return this.blogsService.findBlogByID(id);
+  findOne(@Param('blog_id') id: string, @User() user: DecodeUser) {
+    return this.blogsService.findBlogByID(id, user);
   }
 
   @Patch(':blog_id')

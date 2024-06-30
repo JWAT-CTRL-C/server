@@ -14,8 +14,15 @@ import { RolesGuard } from 'src/guard/roles.guard';
 import { Roles } from 'src/decorator/roles.decorator';
 import { User } from 'src/decorator/user.decorator';
 import { DecodeUser } from 'src/lib/type';
+import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 @UseGuards(RolesGuard)
 @Controller('resources')
+@ApiBearerAuth()
+@ApiHeader({
+  name: 'x-user-id',
+  required: true,
+})
+@ApiTags('Resources')
 export class ResourcesController {
   constructor(private readonly resourcesService: ResourcesService) {}
 
