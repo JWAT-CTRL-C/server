@@ -57,9 +57,7 @@ export class WorkspacesService {
       owner.workspaces.push(user_workspace);
 
       await this.dataSource.manager.transaction(async (manager) => {
-        await manager.save(owner);
-        await manager.save(workspace);
-        await manager.save(user_workspace);
+        await manager.save([owner, workspace, user_workspace]);
       });
 
       return { success: true, message: 'Workspace created successfully' };
@@ -488,9 +486,7 @@ export class WorkspacesService {
       wksp.users.push(user_wksp);
       await this.dataSource.manager
         .transaction(async (manager) => {
-          await manager.save(user);
-          await manager.save(wksp);
-          await manager.save(new_user_wksp);
+          await manager.save([user, wksp, new_user_wksp]);
         })
         .catch(() => {
           throw new ForbiddenException('Add member failed');
@@ -580,13 +576,10 @@ export class WorkspacesService {
     if (!old_owner) throw new NotFoundException('Old owner not found');
 
     // franchise process
-    wksp.owner = new_owner;
-
     new_owner.workspacesOwner.push(wksp);
     return await this.dataSource.manager
       .transaction(async (manager) => {
-        await manager.save(new_owner);
-        await manager.save(wksp);
+        await manager.save([new_owner]);
       })
       .then(() => {
         return {
