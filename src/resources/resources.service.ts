@@ -117,11 +117,9 @@ export class ResourcesService {
       crd_user_id: user.user_id,
       workspace: wksp,
     });
-    wksp.resources.push(resrc);
-    return await Promise.all([
-      this.resourceRepository.save(resrc),
-      this.workspaceRepository.save(wksp),
-    ])
+    return await this.resourceRepository
+      .save(resrc)
+
       .then(() => {
         return { success: true, message: 'Resource added successfully' };
       })
