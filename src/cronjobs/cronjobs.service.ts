@@ -1,5 +1,5 @@
 import { Notification } from 'src/entity/notification.entity';
-import { Repository, MoreThanOrEqual } from 'typeorm';
+import { Repository, LessThanOrEqual } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -18,6 +18,6 @@ export class CronjobsService {
     const date = new Date();
     date.setDate(date.getDate() - 56);
 
-    await this.notificationRepository.delete({ crd_at: MoreThanOrEqual(date) });
+    await this.notificationRepository.delete({ crd_at: LessThanOrEqual(date) });
   }
 }
