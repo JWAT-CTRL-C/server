@@ -269,7 +269,7 @@ export class BlogsService {
       upd_user_id: user.user_id,
     });
 
-    return this.findBlogByID(blog_id, user);
+    return await this.findBlogByID(blog_id, user);
   }
 
   async remove(blog_id: string, user: DecodeUser) {
@@ -293,10 +293,12 @@ export class BlogsService {
     });
     if (!foundBlog) throw new NotFoundException('Blog not found');
 
-    await this.blogRepository.update(blog_id, {
-      deleted_user_id: user.user_id,
-    });
-    await this.blogRepository.softDelete(blog_id);
+    await Promise.all([
+      this.blogRepository.update(blog_id, {
+        deleted_user_id: user.user_id,
+      }),
+      this.blogRepository.softDelete(blog_id),
+    ]);
 
     return { success: true, message: 'Blog removed successfully' };
   }

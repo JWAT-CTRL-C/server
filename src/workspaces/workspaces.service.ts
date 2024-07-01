@@ -54,8 +54,7 @@ export class WorkspacesService {
       user_workspace.workspace = workspace;
 
       await this.dataSource.manager.transaction(async (manager) => {
-        await manager.save(workspace);
-        await manager.save(user_workspace);
+        await manager.save([workspace, user_workspace]);
       });
 
       return { success: true, message: 'Workspace created successfully' };
