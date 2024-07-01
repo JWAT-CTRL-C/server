@@ -235,7 +235,6 @@ export class NotificationsService {
       skip,
       take: this.LIMIT,
     });
-    console.log(notifications[0].userNotificationRead);
     const formatted_notifications = notifications.map((notification) => {
       return {
         ...notification,
