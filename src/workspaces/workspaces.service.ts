@@ -108,6 +108,9 @@ export class WorkspacesService {
             user: true,
           },
         },
+        order: {
+          crd_at: 'DESC',
+        },
       });
       const new_wksp = workspace.map((wksp) => {
         if (wksp.users.length === 0) {
@@ -209,6 +212,9 @@ export class WorkspacesService {
         },
         where: {
           owner: Not(IsNull()),
+        },
+        order: {
+          crd_at: 'DESC',
         },
       });
       const new_wksp = workspace
