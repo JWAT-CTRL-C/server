@@ -40,10 +40,12 @@ export class NotificationsController {
       +withoutSys,
     );
   }
+
   @Get('unread')
   async getUnreadNotifications(@User() user: DecodeUser) {
     return this.notificationsService.getUnreadNotificationAmount(user.user_id);
   }
+
   @Get(':wksp_id')
   @ApiParam({
     name: 'wksp_id',

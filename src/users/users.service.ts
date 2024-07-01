@@ -43,7 +43,7 @@ export class UsersService {
 
     if (foundUser) throw new ConflictException('Username already exists');
 
-    const hashedPassword = await bcrypt.hash(createUserDTO.pass, saltRounds);
+    const hashedPassword = await bcrypt.hash(createUserDTO.usrn, saltRounds);
 
     const newUser = this.userRepository.create({
       ...createUserDTO,
@@ -56,7 +56,7 @@ export class UsersService {
     return { success: true, message: 'User created successfully' };
   }
 
-  async changePassword(changePassDTO: ChangePassDTO) {
+  async changePassword(user: DecodeUser, changePassDTO: ChangePassDTO) {
     const foundUser = await this.userRepository.findOne({
       where: { user_id: changePassDTO.user_id },
     });
@@ -72,10 +72,27 @@ export class UsersService {
 
     await this.userRepository.update(
       { user_id: changePassDTO.user_id },
-      { pass: hashedPassword },
+      { pass: hashedPassword, upd_user_id: user.user_id },
     );
 
     return { success: true, message: 'Password changed successfully' };
+  }
+
+  async resetPassword(user_id: number, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id },
+    });
+
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    const hashedPassword = await bcrypt.hash(foundUser.usrn, saltRounds);
+
+    await this.userRepository.update(
+      { user_id },
+      { pass: hashedPassword, upd_user_id: user.user_id },
+    );
+
+    return { success: true, message: 'Password reset successfully' };
   }
 
   async getProfile(user_id: number) {
