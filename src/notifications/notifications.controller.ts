@@ -5,6 +5,7 @@ import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { User } from 'src/decorator/user.decorator';
 import { DecodeUser } from 'src/lib/type';
+import { Public } from 'src/decorator/public.decorator';
 
 @ApiBearerAuth()
 @ApiHeader({
@@ -39,5 +40,13 @@ export class NotificationsController {
       wksp_id,
       page,
     );
+  }
+
+  @Get('for/admin')
+  async getNotificationsForAdmin(
+    @Query('page') page: number,
+    @User() user: DecodeUser,
+  ) {
+    return this.notificationsService.getNotificationsForAdmin(page, user);
   }
 }
