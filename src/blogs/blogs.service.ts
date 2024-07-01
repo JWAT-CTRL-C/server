@@ -594,4 +594,26 @@ export class BlogsService {
       totalPages,
     };
   }
+  async getBlogsForWorkspace(wksp_id: string, user: DecodeUser) {
+    const blogs = await this.blogRepository.find({
+      where: {
+        workspace: {
+          wksp_id,
+          ...canPassThrough<object>(user, {
+            onApprove: {},
+            onDecline: {
+              users: {
+                user: {
+                  user_id: user.user_id,
+                },
+              },
+            },
+          }),
+        },
+      },
+      relations: relationsBlog,
+      select: selectBlog,
+    });
+    return blogs;
+  }
 }

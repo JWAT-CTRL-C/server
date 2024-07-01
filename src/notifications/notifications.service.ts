@@ -8,7 +8,7 @@ import {
 import { relationWorkspace } from 'src/lib/constant/workspace';
 import { DecodeUser, NotificationType } from 'src/lib/type';
 import { canPassThrough, generateUUID, removeFalsyFields } from 'src/lib/utils';
-import { DataSource, In, IsNull, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 
 import {
   BadRequestException,
@@ -21,6 +21,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CreateNotificationDTO } from './dto/create-notification.dto';
 import { CreateSystemNotificationDTO } from './dto/create-system-notification.dto';
 import { User } from 'src/entity/user.entity';
+import { UserNotificationRead } from 'src/entity/user_notification_read.entity';
 
 @Injectable()
 export class NotificationsService {
@@ -31,6 +32,8 @@ export class NotificationsService {
     private notificationRepository: Repository<Notification>,
     @InjectRepository(Workspace)
     private workspaceRepository: Repository<Workspace>,
+    @InjectRepository(UserNotificationRead)
+    private userNotificationReadRepository: Repository<UserNotificationRead>,
     private dataSource: DataSource,
     @InjectRepository(User) private readonly userRepository: Repository<User>,
   ) {}
@@ -204,7 +207,7 @@ export class NotificationsService {
     }
   }
 
-  async getNotifications(user_id: number, page = 1) {
+  async getNotifications(user_id: number, page = 1, withoutSys: number) {
     const skip = (page - 1) * this.LIMIT;
 
     const workspaces = await this.workspaceRepository.find({
@@ -216,12 +219,14 @@ export class NotificationsService {
         {
           workspace: IsNull(),
           userNotificationRead: [{ user_id: user_id }, { is_read: IsNull() }],
+          ...(!!withoutSys ? { user: Not(IsNull()) } : {}),
         },
         {
           workspace: {
             wksp_id: In(workspaces.map((wksp) => wksp.wksp_id)),
           },
           userNotificationRead: [{ user_id: user_id }, { is_read: IsNull() }],
+          ...(!!withoutSys ? { user: Not(IsNull()) } : {}),
         },
       ],
       order: { crd_at: 'DESC' },
@@ -246,7 +251,6 @@ export class NotificationsService {
 
   async getWorkspaceNotifications(user: DecodeUser, wksp_id: string, page = 1) {
     const skip = (page - 1) * this.LIMIT;
-
     const workspace = await this.workspaceRepository.findOne({
       where: {
         wksp_id,
@@ -372,7 +376,9 @@ export class NotificationsService {
     if (!notification) {
       throw new NotFoundException('Notification not found');
     }
-
+    await this.userNotificationReadRepository.delete({
+      noti_id,
+    });
     await this.notificationRepository.remove(notification);
     return { success: true, message: 'Notification deleted' };
   }
