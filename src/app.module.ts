@@ -1,24 +1,28 @@
+import { redisStore } from 'cache-manager-redis-yet';
+import { RedisClientOptions } from 'redis';
+
+import { CacheModule } from '@nestjs/cache-manager';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthModule } from './auth/auth.module';
 import { BlogsModule } from './blogs/blogs.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { CronjobsModule } from './cronjobs/cronjobs.module';
 import { AuthGuard } from './guard/auth.guard';
 import { AppLoggerMiddleware } from './logger/app.logger';
-import { UsersModule } from './users/users.module';
-import { CacheModule } from '@nestjs/cache-manager';
-import { RedisClientOptions } from 'redis';
-import { redisStore } from 'cache-manager-redis-yet';
 import { NotificationsModule } from './notifications/notifications.module';
-import { WorkspacesModule } from './workspaces/workspaces.module';
 import { ResourcesModule } from './resources/resources.module';
+import { UsersModule } from './users/users.module';
+import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     JwtModule.register({ global: true }),
     ConfigModule.forRoot({ isGlobal: true }),
     CacheModule.registerAsync<RedisClientOptions>({
@@ -59,6 +63,7 @@ import { ResourcesModule } from './resources/resources.module';
     NotificationsModule,
     WorkspacesModule,
     ResourcesModule,
+    CronjobsModule,
   ],
   providers: [
     {

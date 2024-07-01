@@ -175,21 +175,31 @@ export class UsersController {
 
   @Roles('HM', 'MA')
   @Delete(':id')
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: 'number',
+  })
   async delete(@Param('id') user_id: number, @User() user: DecodeUser) {
     return this.usersService.removeUser(user_id, user);
   }
 
   @Roles('HM', 'MA')
   @Patch(':id/restore')
-  // @ApiParam({
-  //   name: 'id',
-  //   required: true,
-  //   type: 'number',
-  // })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: 'number',
+  })
   async restoreUser(@Param('id') id: number) {
     await this.usersService.restoreUser(id);
   }
   @Post(':noti_id/seen')
+  @ApiParam({
+    name: 'noti_id',
+    required: true,
+    type: 'string',
+  })
   async seenNotification(
     @Param('noti_id') noti_id: string,
     @User() user: DecodeUser,

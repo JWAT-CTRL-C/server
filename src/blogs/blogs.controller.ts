@@ -1,17 +1,23 @@
+import { Roles } from 'src/decorator/roles.decorator';
+import { User } from 'src/decorator/user.decorator';
+import { RolesGuard } from 'src/guard/roles.guard';
+import { DecodeUser } from 'src/lib/type';
+
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
-  Delete,
-  UseInterceptors,
-  UploadedFile,
-  Query,
-  Put,
+  Controller,
   DefaultValuePipe,
+  Delete,
+  Get,
+  Param,
   ParseIntPipe,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -22,13 +28,11 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+
 import { BlogsService } from './blogs.service';
 import { CreateBlogDTO } from './dto/create-blog.dto';
-import { UpdateBlogDTO } from './dto/update-blog.dto';
-import { User } from 'src/decorator/user.decorator';
-import { DecodeUser } from 'src/lib/type';
 import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
-import { Roles } from 'src/decorator/roles.decorator';
+import { UpdateBlogDTO } from './dto/update-blog.dto';
 
 @Controller('blogs')
 @ApiBearerAuth()
@@ -37,6 +41,7 @@ import { Roles } from 'src/decorator/roles.decorator';
   required: true,
 })
 @ApiTags('Blogs')
+@UseGuards(RolesGuard)
 export class BlogsController {
   constructor(private readonly blogsService: BlogsService) {}
 

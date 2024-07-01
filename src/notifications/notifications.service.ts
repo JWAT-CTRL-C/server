@@ -13,6 +13,7 @@ import { DataSource, In, IsNull, Repository } from 'typeorm';
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -68,7 +69,9 @@ export class NotificationsService {
         success: false,
         message: 'Error creating global notification',
       });
-      throw new BadRequestException('Error creating global notification');
+      throw new InternalServerErrorException(
+        'Error creating global notification',
+      );
     }
   }
 
@@ -83,7 +86,7 @@ export class NotificationsService {
       });
 
       if (!workspace) {
-        throw new BadRequestException('Workspace not found');
+        throw new NotFoundException('Workspace not found');
       }
 
       const newNotification = this.notificationRepository.create({
@@ -93,21 +96,21 @@ export class NotificationsService {
         workspace,
       });
 
-      workspace.notifications.push(newNotification);
-
       await this.dataSource.manager.transaction(async (manager) => {
-        await manager.save(workspace);
         await manager.save(newNotification);
       });
+
       io.emit(NotificationType.SUCCESS, {
         success: true,
         message: 'Workspace notification created',
       });
+
       const notification = await this.notificationRepository.findOne({
         where: { noti_id: newNotification.noti_id },
         relations: relationNotification,
         select: selectNotification,
       });
+
       io.to(workspace.wksp_id).emit(NotificationType.NEW, notification);
 
       return {
@@ -119,7 +122,9 @@ export class NotificationsService {
         success: false,
         message: 'Error creating workspace notification',
       });
-      throw new BadRequestException('Error creating workspace notification');
+      throw new InternalServerErrorException(
+        'Error creating workspace notification',
+      );
     }
   }
 
@@ -149,7 +154,9 @@ export class NotificationsService {
         data: newNotification,
       };
     } catch (error) {
-      throw new BadRequestException('Error creating system notification');
+      throw new InternalServerErrorException(
+        'Error creating system notification',
+      );
     }
   }
 
@@ -164,7 +171,7 @@ export class NotificationsService {
       });
 
       if (!workspace) {
-        throw new BadRequestException('Workspace not found');
+        throw new NotFoundException('Workspace not found');
       }
 
       const newNotification = this.notificationRepository.create({
@@ -174,10 +181,7 @@ export class NotificationsService {
         workspace,
       });
 
-      workspace.notifications.push(newNotification);
-
       await this.dataSource.manager.transaction(async (manager) => {
-        await manager.save(workspace);
         await manager.save(newNotification);
       });
 
@@ -194,7 +198,9 @@ export class NotificationsService {
         data: newNotification,
       };
     } catch (error) {
-      throw new BadRequestException('Error creating system notification');
+      throw new InternalServerErrorException(
+        'Error creating system notification',
+      );
     }
   }
 
@@ -252,7 +258,7 @@ export class NotificationsService {
     });
 
     if (!workspace) {
-      throw new BadRequestException('Workspace not found');
+      throw new NotFoundException('Workspace not found');
     }
 
     const notifications = await this.notificationRepository.find({
@@ -341,5 +347,33 @@ export class NotificationsService {
       currentPage: parseInt(page.toString()),
       totalPages,
     };
+  }
+  async deleteGlobalNotification(noti_id: string) {
+    const notification = await this.notificationRepository.findOne({
+      where: { noti_id },
+    });
+
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    await this.notificationRepository.remove(notification);
+    return { success: true, message: 'Notification deleted' };
+  }
+
+  async deleteWorkspaceNotification(noti_id: string, wksp_id: string) {
+    const notification = await this.notificationRepository.findOne({
+      where: {
+        noti_id,
+        workspace: { wksp_id },
+      },
+    });
+
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    await this.notificationRepository.remove(notification);
+    return { success: true, message: 'Notification deleted' };
   }
 }

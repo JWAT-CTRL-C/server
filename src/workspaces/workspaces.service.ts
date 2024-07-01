@@ -48,18 +48,13 @@ export class WorkspacesService {
         wksp_name: createWorkspaceDTO.wksp_name,
         wksp_desc: createWorkspaceDTO.wksp_desc,
         owner: owner,
-        users: [user_workspace],
         crd_user_id: owner.user_id,
       });
 
       user_workspace.workspace = workspace;
-      owner.workspacesOwner.push(workspace);
-      owner.workspaces.push(user_workspace);
 
       await this.dataSource.manager.transaction(async (manager) => {
-        await manager.save(owner);
-        await manager.save(workspace);
-        await manager.save(user_workspace);
+        await manager.save([workspace, user_workspace]);
       });
 
       return { success: true, message: 'Workspace created successfully' };
@@ -406,6 +401,13 @@ export class WorkspacesService {
         },
         owner: true,
       },
+      order: {
+        users: {
+          user: {
+            user_id: 'ASC',
+          },
+        },
+      },
     });
     const members = {
       ...result,
@@ -484,32 +486,14 @@ export class WorkspacesService {
         user: user,
         crd_user_id: wksp_owner.user_id,
       });
-      user.workspaces.push(user_wksp);
-      wksp.users.push(user_wksp);
       await this.dataSource.manager
         .transaction(async (manager) => {
-          await manager.save(user);
-          await manager.save(wksp);
           await manager.save(new_user_wksp);
         })
         .catch(() => {
           throw new ForbiddenException('Add member failed');
         });
       return { success: true, message: 'Member added successfully' };
-
-      // await this.userWorkspaceRepository.save(new_user_wksp).catch(() => {
-      //   throw new ForbiddenException('Add member failed');
-      // });
-      // return await Promise.all([
-      //   this.workspaceRepository.save(wksp),
-      //   this.userRepository.save(user),
-      // ])
-      //   .then(() => {
-      //     return { success: true, message: 'Member added successfully' };
-      //   })
-      //   .catch(() => {
-      //     throw new ForbiddenException('Add member failed');
-      //   });
     }
   }
   async removeMember(
@@ -581,13 +565,10 @@ export class WorkspacesService {
 
     // franchise process
     wksp.owner = new_owner;
+    wksp.upd_user_id = wksp_owner.user_id;
 
-    new_owner.workspacesOwner.push(wksp);
-    return await this.dataSource.manager
-      .transaction(async (manager) => {
-        await manager.save(new_owner);
-        await manager.save(wksp);
-      })
+    return await this.workspaceRepository
+      .save(wksp)
       .then(() => {
         return {
           success: true,
