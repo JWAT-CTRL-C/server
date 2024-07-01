@@ -283,4 +283,11 @@ export class BlogsController {
   ) {
     return await this.blogsService.getBlogsForAdmin(page, user);
   }
+  @Get('for/workspace/:wksp_id')
+  async findAllBlogForWorkspace(
+    @User() user: DecodeUser,
+    @Param('wksp_id') wksp_id: string,
+  ) {
+    return await this.blogsService.getBlogsForWorkspace(wksp_id, user);
+  }
 }
