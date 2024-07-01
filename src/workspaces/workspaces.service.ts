@@ -48,18 +48,13 @@ export class WorkspacesService {
         wksp_name: createWorkspaceDTO.wksp_name,
         wksp_desc: createWorkspaceDTO.wksp_desc,
         owner: owner,
-        users: [user_workspace],
         crd_user_id: owner.user_id,
       });
 
       user_workspace.workspace = workspace;
-      owner.workspacesOwner.push(workspace);
-      owner.workspaces.push(user_workspace);
 
       await this.dataSource.manager.transaction(async (manager) => {
-        await manager.save(owner);
-        await manager.save(workspace);
-        await manager.save(user_workspace);
+        await manager.save([workspace, user_workspace]);
       });
 
       return { success: true, message: 'Workspace created successfully' };
@@ -143,7 +138,7 @@ export class WorkspacesService {
       throw new ForbiddenException('Get workspace failed');
     }
   }
-  async getOneWorkspace(wksp_id: string) {
+  async getOneWorkspace(wksp_id: string, user: DecodeUser) {
     const result = await this.workspaceRepository.findOne({
       select: {
         wksp_id: true,
@@ -155,36 +150,6 @@ export class WorkspacesService {
           resrc_id: true,
           resrc_name: true,
           resrc_url: true,
-          blog: {
-            blog_id: true,
-            blog_tle: true,
-            blogRatings: true,
-            blogImage: {
-              blog_img_id: true,
-              blog_img_url: true,
-            },
-            tags: {
-              tag_name: true,
-            },
-          },
-        },
-        blogs: {
-          blog_id: true,
-          blog_tle: true,
-          blogRatings: true,
-          blogImage: {
-            blog_img_id: true,
-            blog_img_url: true,
-          },
-          crd_at: true,
-          tags: {
-            tag_name: true,
-          },
-          user: {
-            user_id: true,
-            usrn: true,
-            fuln: true,
-          },
         },
       },
       where: { wksp_id },
@@ -196,14 +161,14 @@ export class WorkspacesService {
         resources: {
           blog: true,
         },
-        blogs: {
-          blogComments: true,
-          blogImage: true,
-          user: true,
-        },
       },
     });
     if (!result) throw new NotFoundException('Workspace not found');
+    if (
+      !result.users.some((u) => u.user.user_id === user.user_id) &&
+      !canPassThrough(user, { onApprove: true, onDecline: false })
+    )
+      throw new ForbiddenException('Permission denied');
     const workspace = {
       ...result,
       users: removeFalsyFields(
@@ -223,11 +188,6 @@ export class WorkspacesService {
       ),
     };
     return workspace;
-    // .then((workspace) => workspace)
-    // .catch((err) => {
-    //   console.log(err);
-    //   throw new NotFoundException('Workspace not found');
-    // });
   }
   async getUsersWorkspaces(user: DecodeUser) {
     try {
@@ -356,6 +316,7 @@ export class WorkspacesService {
       throw new ForbiddenException('Get workspace failed');
     }
   }
+
   async removeWorkspace(wksp_id: string, wksp_owner: DecodeUser) {
     return await Promise.all([
       this.userWorkspaceRepository.softDelete({
@@ -400,6 +361,13 @@ export class WorkspacesService {
           user: true,
         },
         owner: true,
+      },
+      order: {
+        users: {
+          user: {
+            user_id: 'ASC',
+          },
+        },
       },
     });
     const members = {
@@ -479,32 +447,14 @@ export class WorkspacesService {
         user: user,
         crd_user_id: wksp_owner.user_id,
       });
-      user.workspaces.push(user_wksp);
-      wksp.users.push(user_wksp);
       await this.dataSource.manager
         .transaction(async (manager) => {
-          await manager.save(user);
-          await manager.save(wksp);
           await manager.save(new_user_wksp);
         })
         .catch(() => {
           throw new ForbiddenException('Add member failed');
         });
       return { success: true, message: 'Member added successfully' };
-
-      // await this.userWorkspaceRepository.save(new_user_wksp).catch(() => {
-      //   throw new ForbiddenException('Add member failed');
-      // });
-      // return await Promise.all([
-      //   this.workspaceRepository.save(wksp),
-      //   this.userRepository.save(user),
-      // ])
-      //   .then(() => {
-      //     return { success: true, message: 'Member added successfully' };
-      //   })
-      //   .catch(() => {
-      //     throw new ForbiddenException('Add member failed');
-      //   });
     }
   }
   async removeMember(
@@ -575,17 +525,11 @@ export class WorkspacesService {
     if (!old_owner) throw new NotFoundException('Old owner not found');
 
     // franchise process
-    old_owner.workspacesOwner = old_owner.workspacesOwner.filter(
-      (workspace) => workspace.wksp_id !== wksp_id,
-    );
     wksp.owner = new_owner;
-    new_owner.workspacesOwner.push(wksp);
-    return await this.dataSource.manager
-      .transaction(async (manager) => {
-        await manager.save(old_owner);
-        await manager.save(new_owner);
-        await manager.save(wksp);
-      })
+    wksp.upd_user_id = wksp_owner.user_id;
+
+    return await this.workspaceRepository
+      .save(wksp)
       .then(() => {
         return {
           success: true,

@@ -24,7 +24,7 @@ import { DecodeUser } from 'src/lib/type';
 import { RemoveMemberDTO } from './dto/remove-member.dto';
 @UseGuards(RolesGuard)
 @ApiBearerAuth()
-@ApiTags('workspaces')
+@ApiTags('Workspaces')
 @ApiHeader({
   name: 'x-user-id',
   required: true,
@@ -70,8 +70,8 @@ export class WorkspacesController {
 
   // get specific workspace
   @Get(':wksp_id')
-  getWorkspace(@Param('wksp_id') wksp_id: string) {
-    return this.workspacesService.getOneWorkspace(wksp_id);
+  getWorkspace(@Param('wksp_id') wksp_id: string, @User() user: DecodeUser) {
+    return this.workspacesService.getOneWorkspace(wksp_id, user);
   }
 
   // Soft delete workspace

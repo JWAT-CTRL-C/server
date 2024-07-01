@@ -22,7 +22,7 @@ import {
   selectBlog,
 } from 'src/lib/constant/blog';
 import { DecodeUser } from 'src/lib/type';
-import { generateUUID, getRandomBlogs } from 'src/lib/utils';
+import { canPassThrough, generateUUID, getRandomBlogs } from 'src/lib/utils';
 import { CreateBlogDTO } from './dto/create-blog.dto';
 import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
 import { UpdateBlogDTO } from './dto/update-blog.dto';
@@ -170,7 +170,7 @@ export class BlogsService {
     };
   }
 
-  async findBlogByID(id: string) {
+  async findBlogByID(id: string, user: DecodeUser) {
     const blog = await this.blogRepository.findOne({
       where: { blog_id: id },
       relations: relationsBlog,
@@ -178,6 +178,21 @@ export class BlogsService {
     });
 
     if (!blog) throw new NotFoundException('Blog not found');
+
+    if (blog.workspace) {
+      const userInsideWorkspace = blog.workspace.users.map((u) => u.user);
+      const isUserInWorkspace = userInsideWorkspace.some(
+        (u) => u.user_id === user.user_id,
+      );
+
+      const isMA = canPassThrough(user, { onApprove: true, onDecline: false });
+
+      if (!isUserInWorkspace && !isMA) {
+        throw new ForbiddenException('User does not belong to the workspace');
+      }
+
+      delete blog.workspace.users;
+    }
 
     return blog;
   }
@@ -254,7 +269,7 @@ export class BlogsService {
       upd_user_id: user.user_id,
     });
 
-    return this.findBlogByID(blog_id);
+    return await this.findBlogByID(blog_id, user);
   }
 
   async remove(blog_id: string, user: DecodeUser) {
@@ -278,10 +293,12 @@ export class BlogsService {
     });
     if (!foundBlog) throw new NotFoundException('Blog not found');
 
-    await this.blogRepository.update(blog_id, {
-      deleted_user_id: user.user_id,
-    });
-    await this.blogRepository.softDelete(blog_id);
+    await Promise.all([
+      this.blogRepository.update(blog_id, {
+        deleted_user_id: user.user_id,
+      }),
+      this.blogRepository.softDelete(blog_id),
+    ]);
 
     return { success: true, message: 'Blog removed successfully' };
   }
@@ -576,5 +593,27 @@ export class BlogsService {
       currentPage: page,
       totalPages,
     };
+  }
+  async getBlogsForWorkspace(wksp_id: string, user: DecodeUser) {
+    const blogs = await this.blogRepository.find({
+      where: {
+        workspace: {
+          wksp_id,
+          ...canPassThrough<object>(user, {
+            onApprove: {},
+            onDecline: {
+              users: {
+                user: {
+                  user_id: user.user_id,
+                },
+              },
+            },
+          }),
+        },
+      },
+      relations: relationsBlog,
+      select: selectBlog,
+    });
+    return blogs;
   }
 }

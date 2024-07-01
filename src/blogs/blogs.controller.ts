@@ -1,17 +1,23 @@
+import { Roles } from 'src/decorator/roles.decorator';
+import { User } from 'src/decorator/user.decorator';
+import { RolesGuard } from 'src/guard/roles.guard';
+import { DecodeUser } from 'src/lib/type';
+
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
-  Delete,
-  UseInterceptors,
-  UploadedFile,
-  Query,
-  Put,
+  Controller,
   DefaultValuePipe,
+  Delete,
+  Get,
+  Param,
   ParseIntPipe,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -22,13 +28,11 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+
 import { BlogsService } from './blogs.service';
 import { CreateBlogDTO } from './dto/create-blog.dto';
-import { UpdateBlogDTO } from './dto/update-blog.dto';
-import { User } from 'src/decorator/user.decorator';
-import { DecodeUser } from 'src/lib/type';
 import { CreateBlogCommentDTO } from './dto/crete-blog-comment.dto';
-import { Roles } from 'src/decorator/roles.decorator';
+import { UpdateBlogDTO } from './dto/update-blog.dto';
 
 @Controller('blogs')
 @ApiBearerAuth()
@@ -37,6 +41,7 @@ import { Roles } from 'src/decorator/roles.decorator';
   required: true,
 })
 @ApiTags('Blogs')
+@UseGuards(RolesGuard)
 export class BlogsController {
   constructor(private readonly blogsService: BlogsService) {}
 
@@ -104,8 +109,8 @@ export class BlogsController {
     type: 'string',
     required: true,
   })
-  findOne(@Param('blog_id') id: string) {
-    return this.blogsService.findBlogByID(id);
+  findOne(@Param('blog_id') id: string, @User() user: DecodeUser) {
+    return this.blogsService.findBlogByID(id, user);
   }
 
   @Patch(':blog_id')
@@ -277,5 +282,12 @@ export class BlogsController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
   ) {
     return await this.blogsService.getBlogsForAdmin(page, user);
+  }
+  @Get('for/workspace/:wksp_id')
+  async findAllBlogForWorkspace(
+    @User() user: DecodeUser,
+    @Param('wksp_id') wksp_id: string,
+  ) {
+    return await this.blogsService.getBlogsForWorkspace(wksp_id, user);
   }
 }

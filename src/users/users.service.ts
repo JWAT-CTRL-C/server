@@ -1,7 +1,11 @@
 import * as bcrypt from 'bcrypt';
-import { randomInt } from 'crypto';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { Notification } from 'src/entity/notification.entity';
 import { User } from 'src/entity/user.entity';
+import { UserNotificationRead } from 'src/entity/user_notification_read.entity';
 import { saltRounds } from 'src/lib/constant';
+import { selectUser } from 'src/lib/constant/user';
+import { DecodeUser } from 'src/lib/type';
 import { Repository } from 'typeorm';
 
 import {
@@ -18,11 +22,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ChangePassDTO } from './dto/change-pass.dto';
 import { CreateUserDTO } from './dto/create-user.dto';
 import { UpdateProfileDTO } from './dto/update-profile.dto';
-import { DecodeUser } from 'src/lib/type';
-import { selectUser } from 'src/lib/constant/user';
-import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { Notification } from 'src/entity/notification.entity';
-import { UserNotificationRead } from 'src/entity/user_notification_read.entity';
 
 @Injectable()
 export class UsersService {
@@ -44,7 +43,7 @@ export class UsersService {
 
     if (foundUser) throw new ConflictException('Username already exists');
 
-    const hashedPassword = await bcrypt.hash(createUserDTO.pass, saltRounds);
+    const hashedPassword = await bcrypt.hash(createUserDTO.usrn, saltRounds);
 
     const newUser = this.userRepository.create({
       ...createUserDTO,
@@ -57,7 +56,7 @@ export class UsersService {
     return { success: true, message: 'User created successfully' };
   }
 
-  async changePassword(changePassDTO: ChangePassDTO) {
+  async changePassword(user: DecodeUser, changePassDTO: ChangePassDTO) {
     const foundUser = await this.userRepository.findOne({
       where: { user_id: changePassDTO.user_id },
     });
@@ -73,10 +72,27 @@ export class UsersService {
 
     await this.userRepository.update(
       { user_id: changePassDTO.user_id },
-      { pass: hashedPassword },
+      { pass: hashedPassword, upd_user_id: user.user_id },
     );
 
     return { success: true, message: 'Password changed successfully' };
+  }
+
+  async resetPassword(user_id: number, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id },
+    });
+
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    const hashedPassword = await bcrypt.hash(foundUser.usrn, saltRounds);
+
+    await this.userRepository.update(
+      { user_id },
+      { pass: hashedPassword, upd_user_id: user.user_id },
+    );
+
+    return { success: true, message: 'Password reset successfully' };
   }
 
   async getProfile(user_id: number) {
@@ -205,6 +221,7 @@ export class UsersService {
 
     return { success: true, message: 'User Restore successfully' };
   }
+
   async seenNotification(noti_id: string, user: DecodeUser) {
     const foundUser = await this.userRepository.findOneBy({
       user_id: user.user_id,
@@ -239,6 +256,9 @@ export class UsersService {
               throw new InternalServerErrorException('Something went wrong');
             });
         }
+      })
+      .catch(() => {
+        throw new InternalServerErrorException('Something went wrong');
       });
   }
 }

@@ -114,7 +114,7 @@ export class UsersController {
     return this.usersService.uploadImage(file, user);
   }
 
-  @Post('change-password')
+  @Patch('change-password')
   @ApiBody({
     schema: {
       type: 'object',
@@ -135,8 +135,22 @@ export class UsersController {
       required: ['user_id', 'oldPass', 'newPass'],
     },
   })
-  async changePassword(@Body() changePassDTO: ChangePassDTO) {
-    return this.usersService.changePassword(changePassDTO);
+  async changePassword(
+    @Body() changePassDTO: ChangePassDTO,
+    @User() user: DecodeUser,
+  ) {
+    return this.usersService.changePassword(user, changePassDTO);
+  }
+
+  @Roles('HM', 'MA')
+  @Patch(':id/reset-password')
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: 'number',
+  })
+  async resetPassword(@Param('id') user_id: number, @User() user: DecodeUser) {
+    return this.usersService.resetPassword(user_id, user);
   }
 
   @Patch(':id')
@@ -175,21 +189,31 @@ export class UsersController {
 
   @Roles('HM', 'MA')
   @Delete(':id')
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: 'number',
+  })
   async delete(@Param('id') user_id: number, @User() user: DecodeUser) {
     return this.usersService.removeUser(user_id, user);
   }
 
   @Roles('HM', 'MA')
   @Patch(':id/restore')
-  // @ApiParam({
-  //   name: 'id',
-  //   required: true,
-  //   type: 'number',
-  // })
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: 'number',
+  })
   async restoreUser(@Param('id') id: number) {
     await this.usersService.restoreUser(id);
   }
   @Post(':noti_id/seen')
+  @ApiParam({
+    name: 'noti_id',
+    required: true,
+    type: 'string',
+  })
   async seenNotification(
     @Param('noti_id') noti_id: string,
     @User() user: DecodeUser,
