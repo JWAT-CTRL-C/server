@@ -114,7 +114,7 @@ export class UsersController {
     return this.usersService.uploadImage(file, user);
   }
 
-  @Post('change-password')
+  @Patch('change-password')
   @ApiBody({
     schema: {
       type: 'object',
@@ -135,8 +135,22 @@ export class UsersController {
       required: ['user_id', 'oldPass', 'newPass'],
     },
   })
-  async changePassword(@Body() changePassDTO: ChangePassDTO) {
-    return this.usersService.changePassword(changePassDTO);
+  async changePassword(
+    @Body() changePassDTO: ChangePassDTO,
+    @User() user: DecodeUser,
+  ) {
+    return this.usersService.changePassword(user, changePassDTO);
+  }
+
+  @Roles('HM', 'MA')
+  @Patch(':id/reset-password')
+  @ApiParam({
+    name: 'id',
+    required: true,
+    type: 'number',
+  })
+  async resetPassword(@Param('id') user_id: number, @User() user: DecodeUser) {
+    return this.usersService.resetPassword(user_id, user);
   }
 
   @Patch(':id')

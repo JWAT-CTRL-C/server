@@ -324,6 +324,9 @@ export class NotificationsService {
       throw new NotFoundException('Notification not found');
     }
 
+    await this.userNotificationReadRepository.delete({
+      noti_id,
+    });
     await this.notificationRepository.remove(notification);
     return { success: true, message: 'Notification deleted' };
   }
