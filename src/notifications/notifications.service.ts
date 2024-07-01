@@ -11,14 +11,16 @@ import { canPassThrough, generateUUID, removeFalsyFields } from 'src/lib/utils';
 import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 
 import {
-  InternalServerErrorException,
+  BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { CreateNotificationDTO } from './dto/create-notification.dto';
 import { CreateSystemNotificationDTO } from './dto/create-system-notification.dto';
+import { User } from 'src/entity/user.entity';
 import { UserNotificationRead } from 'src/entity/user_notification_read.entity';
 
 @Injectable()
@@ -33,6 +35,7 @@ export class NotificationsService {
     @InjectRepository(UserNotificationRead)
     private userNotificationReadRepository: Repository<UserNotificationRead>,
     private dataSource: DataSource,
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
   ) {}
 
   async createGlobalNotification(
@@ -315,6 +318,40 @@ export class NotificationsService {
     return { unreadAmount };
   }
 
+  async getNotificationsForAdmin(page = 1, user: DecodeUser) {
+    const foundUser = await this.userRepository.findOne({
+      where: { user_id: user.user_id },
+    });
+    if (!foundUser) throw new NotFoundException('User not found');
+
+    const skip = (page - 1) * this.LIMIT;
+
+    const [notifications, totalNotifications] =
+      await this.notificationRepository.findAndCount({
+        order: { crd_at: 'DESC' },
+        relations: relationNotification,
+        select: selectNotification,
+        skip,
+        take: this.LIMIT,
+      });
+
+    const formatted_notifications = notifications.map((notification) => {
+      return {
+        ...notification,
+        userNotificationRead: undefined,
+        is_read: notification.userNotificationRead.length
+          ? notification.userNotificationRead[0].is_read
+          : false,
+      };
+    });
+
+    const totalPages = Math.ceil(totalNotifications / this.LIMIT);
+    return {
+      data: formatted_notifications,
+      currentPage: parseInt(page.toString()),
+      totalPages,
+    };
+  }
   async deleteGlobalNotification(noti_id: string) {
     const notification = await this.notificationRepository.findOne({
       where: { noti_id },
