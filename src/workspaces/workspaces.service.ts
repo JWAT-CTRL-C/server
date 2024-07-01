@@ -150,36 +150,6 @@ export class WorkspacesService {
           resrc_id: true,
           resrc_name: true,
           resrc_url: true,
-          blog: {
-            blog_id: true,
-            blog_tle: true,
-            blogRatings: true,
-            blogImage: {
-              blog_img_id: true,
-              blog_img_url: true,
-            },
-            tags: {
-              tag_name: true,
-            },
-          },
-        },
-        blogs: {
-          blog_id: true,
-          blog_tle: true,
-          blogRatings: true,
-          blogImage: {
-            blog_img_id: true,
-            blog_img_url: true,
-          },
-          crd_at: true,
-          tags: {
-            tag_name: true,
-          },
-          user: {
-            user_id: true,
-            usrn: true,
-            fuln: true,
-          },
         },
       },
       where: { wksp_id },
@@ -190,11 +160,6 @@ export class WorkspacesService {
         },
         resources: {
           blog: true,
-        },
-        blogs: {
-          blogComments: true,
-          blogImage: true,
-          user: true,
         },
       },
     });
@@ -223,11 +188,6 @@ export class WorkspacesService {
       ),
     };
     return workspace;
-    // .then((workspace) => workspace)
-    // .catch((err) => {
-    //   console.log(err);
-    //   throw new NotFoundException('Workspace not found');
-    // });
   }
   async getUsersWorkspaces(user: DecodeUser) {
     try {
@@ -356,6 +316,7 @@ export class WorkspacesService {
       throw new ForbiddenException('Get workspace failed');
     }
   }
+
   async removeWorkspace(wksp_id: string, wksp_owner: DecodeUser) {
     return await Promise.all([
       this.userWorkspaceRepository.softDelete({

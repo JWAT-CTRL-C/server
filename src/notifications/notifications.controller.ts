@@ -2,6 +2,7 @@ import { RolesGuard } from 'src/guard/roles.guard';
 
 import {
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   Param,
@@ -29,8 +30,13 @@ export class NotificationsController {
   async getNotifications(
     @User() user: DecodeUser,
     @Query('page') page: number,
+    @Query('withoutSys') withoutSys: number,
   ) {
-    return this.notificationsService.getNotifications(user.user_id, page);
+    return this.notificationsService.getNotifications(
+      user.user_id,
+      +page,
+      +withoutSys,
+    );
   }
 
   @Get('unread')
@@ -52,7 +58,7 @@ export class NotificationsController {
     return this.notificationsService.getWorkspaceNotifications(
       user,
       wksp_id,
-      page,
+      +page,
     );
   }
 
