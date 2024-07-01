@@ -218,14 +218,14 @@ export class NotificationsService {
       where: [
         {
           workspace: IsNull(),
-          userNotificationRead: [{ user_id: user_id }, { is_read: IsNull() }],
+          // userNotificationRead: [{ user_id: user_id }, { user_id: IsNull() }],
           ...(!!withoutSys ? { user: Not(IsNull()) } : {}),
         },
         {
           workspace: {
             wksp_id: In(workspaces.map((wksp) => wksp.wksp_id)),
           },
-          userNotificationRead: [{ user_id: user_id }, { is_read: IsNull() }],
+          // userNotificationRead: [{ user_id: user_id }, { user_id: IsNull() }],
           ...(!!withoutSys ? { user: Not(IsNull()) } : {}),
         },
       ],
@@ -235,13 +235,15 @@ export class NotificationsService {
       skip,
       take: this.LIMIT,
     });
-
+    console.log(notifications[0].userNotificationRead);
     const formatted_notifications = notifications.map((notification) => {
       return {
         ...notification,
         userNotificationRead: undefined,
         is_read: notification.userNotificationRead.length
-          ? notification.userNotificationRead[0].is_read
+          ? notification.userNotificationRead.some(
+              (u) => u.user_id === user_id && u.is_read,
+            )
           : false,
       };
     });

@@ -18,5 +18,6 @@ export const selectNotification = {
   userNotificationRead: {
     is_read: true,
     user_noti_read_id: true,
+    user_id: true,
   },
 };
