@@ -269,10 +269,10 @@ export class NotificationsService {
     const notifications = await this.notificationRepository.find({
       where: {
         workspace: { wksp_id: workspace.wksp_id },
-        userNotificationRead: [
-          { user_id: user.user_id },
-          { is_read: IsNull() },
-        ],
+        // userNotificationRead: [
+        //   { user_id: user.user_id },
+        //   { is_read: IsNull() },
+        // ],
       },
       order: { crd_at: 'DESC' },
       relations: relationNotification,
@@ -286,7 +286,9 @@ export class NotificationsService {
         ...notification,
         userNotificationRead: undefined,
         is_read: notification.userNotificationRead.length
-          ? notification.userNotificationRead[0].is_read
+          ? notification.userNotificationRead.some(
+              (u) => u.user_id === user.user_id && u.is_read,
+            )
           : false,
       };
     });
@@ -298,17 +300,17 @@ export class NotificationsService {
       where: { users: { user: { user_id: user_id } } },
     });
 
-    const unreadAmount = await this.notificationRepository.count({
+    const notifications = await this.notificationRepository.find({
       where: [
         {
           workspace: IsNull(),
-          userNotificationRead: { is_read: IsNull() },
+          // userNotificationRead: { is_read: IsNull() },
         },
         {
           workspace: {
             wksp_id: In(workspaces.map((wksp) => wksp.wksp_id)),
           },
-          userNotificationRead: { is_read: IsNull() },
+          // userNotificationRead: { is_read: IsNull() },
         },
       ],
       relations: {
@@ -316,6 +318,13 @@ export class NotificationsService {
         userNotificationRead: true,
       },
     });
+
+    const unreadAmount = notifications.reduce((acc, curr) => {
+      if (!curr.userNotificationRead.some((u) => u.user_id === user_id))
+        return acc + 1;
+      return acc;
+    }, 0);
+
     return { unreadAmount };
   }
 
